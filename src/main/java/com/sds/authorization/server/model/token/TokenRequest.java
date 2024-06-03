@@ -21,6 +21,8 @@ public record TokenRequest(
         @JsonProperty("username")
         String username,
         @JsonProperty(value = "password", defaultValue = "-")
-        String password
+        String password,
+        @JsonProperty(value = "refresh_token", defaultValue = "-")
+        String refreshToken
 ) {
 }

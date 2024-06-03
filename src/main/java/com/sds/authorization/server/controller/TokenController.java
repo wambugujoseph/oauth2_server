@@ -39,7 +39,8 @@ public class TokenController {
                             tokenRequest.getOrDefault("client_secret", ""),
                             tokenRequest.getOrDefault("audience", ""),
                             tokenRequest.getOrDefault("username", ""),
-                            tokenRequest.getOrDefault("password", "")
+                            tokenRequest.getOrDefault("password", ""),
+                            tokenRequest.getOrDefault("refresh_token", "")
                     )
             );
             if (token != null) {

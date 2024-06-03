@@ -1,6 +1,7 @@
 package com.sds.authorization.server.security;
 
 import com.nimbusds.jose.JOSEException;
+import com.nimbusds.jwt.EncryptedJWT;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.model.token.Token;
@@ -51,6 +52,7 @@ public class TokenService {
         return switch (GrantType.valueOf(tokenRequest.grantType().toUpperCase())) {
             case PASSWORD -> passwordToken();
             case CLIENT_CREDENTIALS -> clientCredentialsToken();
+            case REFRESH_TOKEN -> refreshToken();
         };
     }
 
@@ -107,6 +109,42 @@ public class TokenService {
         throw new ResponseStatusException(HttpStatusCode.valueOf(401), "UnAuthorised");
     }
 
+    private Token refreshToken(){
+        try {
+            EncryptedJWT jwt = jwtTokenUtil.decodeToken(tokenRequest.refreshToken());
+
+            if (jwt.getJWTClaimsSet().getStringClaim("typ").equals("refresh")){
+                String userID = jwt.getJWTClaimsSet().getStringClaim("uid");
+                Optional<User> userOptional = userRepository.findByEmailOrUsername(userID, userID);
+                Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
+                if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
+                    User user = userOptional.get();
+                    OauthClientDetails  oauthClient  = oauthClientDetails.get();
+                    log.info("GENERATING TOKEN FROM REFRESH TOKEN : {} ", user.getEmail());
+                    if (verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
+                        try {
+                            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, "test");
+                            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, "test");
+                            return new Token(
+                                    token,
+                                    refresh,
+                                    "Bearer",
+                                    oauthClient.getAccessTokenValidity(),
+                                    "read,write"
+                            );
+                        } catch (JOSEException e) {
+                            log.error(e.getMessage(), e);
+                        }
+                    }
+                }
+                throw new ResponseStatusException(HttpStatusCode.valueOf(401), "UnAuthorised");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return null;
+    }
+
     public Object getTokenInfo(String token){
         return jwtTokenUtil.verifyToken(token);
     }
@@ -122,7 +160,8 @@ public class TokenService {
 
     enum GrantType {
         PASSWORD("password"),
-        CLIENT_CREDENTIALS("client_credentials");
+        CLIENT_CREDENTIALS("client_credentials"),
+        REFRESH_TOKEN("refresh_token");
 
         private final String value;
 

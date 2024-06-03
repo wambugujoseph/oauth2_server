@@ -104,7 +104,7 @@ public class JwtTokenUtil {
                 .notBeforeTime(now)
                 .issueTime(now)
                 .claim("typ","refresh")
-                .claim("uid", user.getUserId())
+                .claim("uid", user.getUsername())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
