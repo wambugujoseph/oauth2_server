@@ -88,8 +88,6 @@ public class JwtTokenUtil {
         jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
         return jwt.serialize();
     }
-    
-    
 
     /*
     public String generateMfaToken(Authentication authentication, String jwtId, String code) {

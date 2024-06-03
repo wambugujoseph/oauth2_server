@@ -1,9 +1,11 @@
 package com.sds.authorization.server.security;
 
 import com.nimbusds.jose.JOSEException;
+import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
+import com.sds.authorization.server.repo.OauthClientRepository;
 import com.sds.authorization.server.repo.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
@@ -28,11 +30,13 @@ public class TokenService {
 
     private TokenRequest tokenRequest;
     private final UserRepository userRepository;
+    private final OauthClientRepository oauthClientRepository;
     private final JwtTokenUtil jwtTokenUtil;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public TokenService(UserRepository userRepository, JwtTokenUtil jwtTokenUtil) {
+    public TokenService(UserRepository userRepository, JwtTokenUtil jwtTokenUtil, OauthClientRepository oauthClientRepository ) {
         this.userRepository = userRepository;
+        this.oauthClientRepository = oauthClientRepository;
         this.jwtTokenUtil = jwtTokenUtil;
         this.bCryptPasswordEncoder = new BCryptPasswordEncoder(
                 BCryptPasswordEncoder.BCryptVersion.$2A, 10, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8)));
@@ -51,10 +55,12 @@ public class TokenService {
 
     private Token passwordToken() {
         Optional<User> userOptional = userRepository.findByEmailOrUsername(tokenRequest.username(), tokenRequest.username());
-        if (userOptional.isPresent()) {
+        Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
+        if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
             User user = userOptional.get();
+            OauthClientDetails  oauthClient  = oauthClientDetails.get();
             log.info("GENERATING TOKEN FOR : {} ", user.getEmail());
-            if (verifyPassword(tokenRequest.password(), user.getPassword())) {
+            if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
                 try {
                     String token = jwtTokenUtil.generateAccessToken(user, "test");
                     return new Token(

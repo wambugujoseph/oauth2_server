@@ -23,9 +23,6 @@ public class OauthClientDetails {
     private String username;
     private String applicationName;
 
-    //HR.OAUTH_CLIENT_DETAILS (CLIENT_ID,RESOURCE_IDS,CLIENT_SECRET,SCOPE,AUTHORIZED_GRANT_TYPES,WEB_SERVER_REDIRECT_URI,AUTHORITIES,ACCESS_TOKEN_VALIDITY,REFRESH_TOKEN_VALIDITY,ADDITIONAL_INFORMATION,AUTOAPPROVE)
-    // values ('my-client','resource_id','--','read,write,trust','password,authorization_code,refresh_token','resource_id','CLIENT',600,300,null,null);
-
     @Id
     @Column(name = "client_id", length =100)
     public String getClientId() {
