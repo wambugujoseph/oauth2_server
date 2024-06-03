@@ -1,5 +1,8 @@
 package com.sds.authorization.server.model.token;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
  * @author Joseph Kibe
  * Created on May 31, 2024.
@@ -7,6 +10,8 @@ package com.sds.authorization.server.model.token;
  */
 
 
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record Token (
         String accessToken,
         String refreshToken,

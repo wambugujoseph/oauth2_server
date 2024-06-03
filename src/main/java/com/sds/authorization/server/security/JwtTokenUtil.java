@@ -5,6 +5,7 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.Role;
 import com.sds.authorization.server.model.User;
 import lombok.extern.slf4j.Slf4j;
@@ -68,10 +69,10 @@ public class JwtTokenUtil {
         return new EncryptedJWT(header, jwtClaims);
     }
 
-    public String generateAccessToken(User user, String keyId) throws JOSEException {
+    public String generateAccessToken(User user, OauthClientDetails oauthClientDetails, String keyId) throws JOSEException {
         LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
         Date now = Date.from(current.toInstant(ZoneOffset.UTC));
-        Date exp = Date.from(current.plusSeconds(3600).toInstant(ZoneOffset.UTC));
+        Date exp = Date.from(current.plusSeconds(oauthClientDetails.getAccessTokenValidity()).toInstant(ZoneOffset.UTC));
 
         JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
                 .issuer(UUID.randomUUID().toString())
@@ -81,6 +82,7 @@ public class JwtTokenUtil {
                 .notBeforeTime(now)
                 .issueTime(now)
                 .claim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
+                .claim("typ","access")
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
@@ -88,6 +90,30 @@ public class JwtTokenUtil {
         jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
         return jwt.serialize();
     }
+
+    public String generateRefreshToken(User user, OauthClientDetails oauthClientDetails, String keyId) throws JOSEException {
+        LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
+        Date now = Date.from(current.toInstant(ZoneOffset.UTC));
+        Date exp = Date.from(current.plusSeconds(oauthClientDetails.getRefreshTokenValidity()).toInstant(ZoneOffset.UTC));
+
+        JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
+                .issuer(UUID.randomUUID().toString())
+                .subject("SDS-APP")
+                .audience(UUID.randomUUID().toString())
+                .expirationTime(exp) // expires in 10 minutes
+                .notBeforeTime(now)
+                .issueTime(now)
+                .claim("typ","refresh")
+                .claim("uid", user.getUserId())
+                .jwtID(UUID.randomUUID().toString())
+                .build();
+
+        EncryptedJWT jwt = getEncryptedJWT("test", jwtClaims);
+        jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
+        return jwt.serialize();
+    }
+
+
 
     /*
     public String generateMfaToken(Authentication authentication, String jwtId, String code) {

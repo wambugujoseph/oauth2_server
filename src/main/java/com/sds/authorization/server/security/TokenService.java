@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Optional;
 
 /**
@@ -62,12 +63,13 @@ public class TokenService {
             log.info("GENERATING TOKEN FOR : {} ", user.getEmail());
             if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
                 try {
-                    String token = jwtTokenUtil.generateAccessToken(user, "test");
+                    String token = jwtTokenUtil.generateAccessToken(user, oauthClient, "test");
+                    String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, "test");
                     return new Token(
                          token,
-                         "",
+                         refresh,
                          "Bearer",
-                         3600,
+                            oauthClient.getAccessTokenValidity(),
                          "read,write"
                     );
                 } catch (JOSEException e) {
@@ -79,8 +81,30 @@ public class TokenService {
     }
 
     private Token clientCredentialsToken() {
-        log.info("Credentials");
-        return null;
+        Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
+        if ( oauthClientDetails.isPresent()) {
+            OauthClientDetails  oauthClient  = oauthClientDetails.get();
+            if (verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
+                try {
+                    String token = jwtTokenUtil.generateAccessToken(
+                            User.builder()
+                                    .roles(new ArrayList<>())
+                                    .build(),
+                            oauthClient,
+                            "test");
+                    return new Token(
+                            token,
+                            null,
+                            "Bearer",
+                            oauthClient.getAccessTokenValidity(),
+                            "read,write"
+                    );
+                } catch (JOSEException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        }
+        throw new ResponseStatusException(HttpStatusCode.valueOf(401), "UnAuthorised");
     }
 
     public Object getTokenInfo(String token){

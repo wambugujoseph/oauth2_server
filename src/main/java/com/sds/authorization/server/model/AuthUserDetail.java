@@ -11,11 +11,6 @@ import java.util.List;
 
 public class AuthUserDetail extends User implements UserDetails {
 
-    public AuthUserDetail(User user) {
-        super(user);
-    }
-
-
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
 

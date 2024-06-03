@@ -22,23 +22,10 @@ import java.util.Objects;
 @Getter
 @Setter
 @ToString
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class User implements Serializable {
-    public User() {
-    }
-
-    public User(User user) {
-        this.username = user.getUsername();
-        this.userId = user.getUserId();
-        this.password = user.getPassword();
-        this.email = user.getEmail();
-        this.phoneNumber = user.getPhoneNumber();
-        this.enabled = user.isEnabled();
-        this.accountNonExpired = user.isAccountNonExpired();
-        this.credentialsNonExpired = user.isCredentialsNonExpired();
-        this.accountNonLocked = user.isAccountNonLocked();
-        this.roles = user.getRoles();
-    }
-
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
