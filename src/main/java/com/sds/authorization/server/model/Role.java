@@ -22,7 +22,9 @@ import java.util.Objects;
 @Getter
 @Setter
 @ToString
-@RequiredArgsConstructor
+@NoArgsConstructor
+@Builder
+@AllArgsConstructor
 public class Role implements Serializable {
 
     @Id

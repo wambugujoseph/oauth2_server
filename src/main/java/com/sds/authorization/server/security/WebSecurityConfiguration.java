@@ -63,7 +63,8 @@ public class WebSecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
                         authorizationManagerRequestMatcherRegistry
-                                .requestMatchers("/login", "/login/**", "/logout", "/resources/**", "/api/v1/tokeninfo", "/api/v1/oauth/token")
+                                .requestMatchers("/login", "/login/**", "/logout", "/resources/**",
+                                        "/api/v1/tokeninfo", "/api/v1/oauth/token", "/api/v1/register/user")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())
