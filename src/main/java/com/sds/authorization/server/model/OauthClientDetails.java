@@ -1,12 +1,18 @@
 package com.sds.authorization.server.model;
 
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.Objects;
 
 
 @Entity
 @Table(name = "oauth_client_details")
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+@Getter
+@Setter
 public class OauthClientDetails {
     private String clientId;
     private String clientSecret;

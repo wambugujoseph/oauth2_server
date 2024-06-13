@@ -64,7 +64,8 @@ public class WebSecurityConfiguration {
                 .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
                         authorizationManagerRequestMatcherRegistry
                                 .requestMatchers("/login", "/login/**", "/logout", "/resources/**",
-                                        "/api/v1/tokeninfo", "/api/v1/oauth/token", "/api/v1/register/user")
+                                        "/api/v1/tokeninfo", "/api/v1/oauth/token", "/api/v1/register/user",
+                                        "/api/v1/register/client")
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())

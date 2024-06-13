@@ -3,6 +3,7 @@ package com.sds.authorization.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.repo.UserRepository;
 import com.sds.authorization.server.security.RSAKeyGenerator;
@@ -47,7 +48,7 @@ class AuthorizationServiceApplicationTests {
     @Test
     void genJson(){
         try {
-            log.info("------- {}",new ObjectMapper().writeValueAsString(new User()));
+            log.info("------- {}",new ObjectMapper().writeValueAsString(new OauthClientDetails()));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
