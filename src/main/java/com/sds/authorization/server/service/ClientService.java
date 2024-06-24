@@ -1,12 +1,10 @@
 package com.sds.authorization.server.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sds.authorization.server.dto.ClientCreateDto;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.repo.OauthClientRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.RandomStringGenerator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -25,22 +23,27 @@ import java.util.Random;
 @Slf4j
 public class ClientService {
 
-    @Autowired
-    private OauthClientRepository oauthClientRepository;
+    private final OauthClientRepository oauthClientRepository;
+    private final Random random;
+
+    public ClientService(OauthClientRepository oauthClientRepository) {
+        this.oauthClientRepository = oauthClientRepository;
+        this.random = new Random();
+    }
 
     public OauthClientDetails createOauthClientDetails(ClientCreateDto clientCreateDto) {
 
         try {
             RandomStringGenerator pwdGen = new RandomStringGenerator.Builder().selectFrom("bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ123456789._+=@%|,".toCharArray()).withinRange(50, 50).get();
             RandomStringGenerator pwdGen2 = new RandomStringGenerator.Builder().selectFrom("bcdfghjklmnpqrstvwxyz123456789".toCharArray()).withinRange(30, 50).get();
-            String clientID = ("ct-" + Long.toString(Long.parseLong(new Date().getTime() + "" + new Random().nextInt(1000, 1999)), 36) +
+            String clientID = ("ct-" + Long.toString(Long.parseLong(new Date().getTime() + "" + random.nextInt(1000, 1999)), 36) +
                     "-" + pwdGen2.generate(15));
             String clientSecret = pwdGen.generate(50);
 
             OauthClientDetails clientDetails = OauthClientDetails.builder()
                     .clientId(clientID)
                     .clientSecret(new BCryptPasswordEncoder(
-                            BCryptPasswordEncoder.BCryptVersion.$2A, 11, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8))).encode(clientSecret))
+                            BCryptPasswordEncoder.BCryptVersion.$2A, 11, new SecureRandom(String.valueOf(random.nextInt(10,99)).getBytes(StandardCharsets.UTF_8))).encode(clientSecret))
                     .webServerRedirectUri(clientCreateDto.webServerRedirectUri())
                     .scope(clientCreateDto.scope())
                     .accessTokenValidity(clientCreateDto.accessTokenValidity())

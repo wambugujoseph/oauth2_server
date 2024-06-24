@@ -3,11 +3,9 @@ package com.sds.authorization.server.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.proxy.HibernateProxy;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
 
 /**
  * Created by Kibe Joseph Wambugu
@@ -39,19 +37,5 @@ public class Role implements Serializable {
             @JoinColumn(name = "permission_id", referencedColumnName = "id")})
     private List<Permission> permissions;
 
-    @Override
-    public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
-        if (thisEffectiveClass != oEffectiveClass) return false;
-        Role role = (Role) o;
-        return getId() != null && Objects.equals(getId(), role.getId());
-    }
 
-    @Override
-    public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
-    }
 }

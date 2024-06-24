@@ -7,10 +7,7 @@ import com.sds.authorization.server.service.ClientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * @author Joseph Kibe
@@ -21,12 +18,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class ClientController {
 
-    @Autowired
-    private ClientService clientService;
+    private final ClientService clientService;
 
-    @RequestMapping(value = "/api/v1/register/client", consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
-    public ResponseEntity<?> createUser(@RequestBody ClientCreateDto clientCreateDto){
+    public ClientController(ClientService clientService) {
+        this.clientService = clientService;
+    }
+
+    @PostMapping(value = "/api/v1/register/client", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> createUser(@RequestBody ClientCreateDto clientCreateDto){
         OauthClientDetails clientDetails = clientService.createOauthClientDetails(clientCreateDto);
         return ResponseEntity.ok(clientDetails);
     }

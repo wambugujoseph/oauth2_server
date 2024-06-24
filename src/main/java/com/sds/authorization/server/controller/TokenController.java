@@ -9,10 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
@@ -26,11 +23,14 @@ import java.util.Map;
 @Slf4j
 public class TokenController {
 
-    @Autowired
-    private TokenService tokenService;
+    private final TokenService tokenService;
 
-    @RequestMapping(value = "/api/v1/oauth/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, method = RequestMethod.POST)
-    public ResponseEntity<?> getAuthToken(@RequestParam Map<String, String> tokenRequest) {
+    public TokenController(TokenService tokenService) {
+        this.tokenService = tokenService;
+    }
+
+    @PostMapping(value = "/api/v1/oauth/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public ResponseEntity<Object> getAuthToken(@RequestParam Map<String, String> tokenRequest) {
         try {
             Token token = tokenService.tokenGeneratorHandler(
                     new TokenRequest(
@@ -50,12 +50,13 @@ public class TokenController {
                     .responseCode("401")
                     .responseDesc("UnAuthorized"));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.error(e.getMessage(), e);
         }
+        return ResponseEntity.badRequest().build();
     }
 
-    @RequestMapping(value ="/api/v1/tokeninfo", consumes =MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
-    public ResponseEntity<?> tokenInfo(@RequestParam("access_token") String accessToken ){
+    @GetMapping(value ="/api/v1/tokeninfo", consumes =MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> tokenInfo(@RequestParam("access_token") String accessToken ){
 
         try {
             return ResponseEntity.ok(tokenService.getTokenInfo(accessToken));
