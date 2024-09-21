@@ -52,7 +52,7 @@ public class ClientService {
                     .authorizedGrantTypes(clientCreateDto.authorizedGrantTypes())
                     .authorities(clientCreateDto.authorities())
                     .additionalInformation(clientCreateDto.additionalInformation())
-                    .autoapprove(String.valueOf(clientCreateDto.autoapprove()))
+                    .autoApprove(String.valueOf(clientCreateDto.autoapprove()))
                     .numberUser(clientCreateDto.numberUser())
                     .username("TEST")
                     .applicationName(clientCreateDto.applicationName())

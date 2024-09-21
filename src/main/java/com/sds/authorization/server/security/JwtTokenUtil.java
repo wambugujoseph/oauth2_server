@@ -82,7 +82,9 @@ public class JwtTokenUtil {
                 .notBeforeTime(now)
                 .issueTime(now)
                 .claim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
-                .claim("typ","access")
+                .claim("typ", "access_token")
+                .claim("name", user.getUsername())
+                .claim("email", user.getEmail())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
@@ -103,8 +105,9 @@ public class JwtTokenUtil {
                 .expirationTime(exp) // expires in 10 minutes
                 .notBeforeTime(now)
                 .issueTime(now)
-                .claim("typ","refresh")
+                .claim("typ", "refresh")
                 .claim("uid", user.getUsername())
+                .claim("email", user.getEmail())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
@@ -112,8 +115,6 @@ public class JwtTokenUtil {
         jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
         return jwt.serialize();
     }
-
-
 
     /*
     public String generateMfaToken(Authentication authentication, String jwtId, String code) {

@@ -36,7 +36,7 @@ public class TokenService {
     private final JwtTokenUtil jwtTokenUtil;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public TokenService(UserRepository userRepository, JwtTokenUtil jwtTokenUtil, OauthClientRepository oauthClientRepository ) {
+    public TokenService(UserRepository userRepository, JwtTokenUtil jwtTokenUtil, OauthClientRepository oauthClientRepository) {
         this.userRepository = userRepository;
         this.oauthClientRepository = oauthClientRepository;
         this.jwtTokenUtil = jwtTokenUtil;
@@ -61,18 +61,18 @@ public class TokenService {
         Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
         if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
             User user = userOptional.get();
-            OauthClientDetails  oauthClient  = oauthClientDetails.get();
+            OauthClientDetails oauthClient = oauthClientDetails.get();
             log.info("GENERATING TOKEN FOR : {} ", user.getEmail());
             if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
                 try {
                     String token = jwtTokenUtil.generateAccessToken(user, oauthClient, "test");
                     String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, "test");
                     return new Token(
-                         token,
-                         refresh,
-                         "Bearer",
+                            token,
+                            refresh,
+                            "Bearer",
                             oauthClient.getAccessTokenValidity(),
-                         "read,write"
+                            "read,write"
                     );
                 } catch (JOSEException e) {
                     log.error(e.getMessage(), e);
@@ -84,8 +84,8 @@ public class TokenService {
 
     private Token clientCredentialsToken() {
         Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
-        if ( oauthClientDetails.isPresent()) {
-            OauthClientDetails  oauthClient  = oauthClientDetails.get();
+        if (oauthClientDetails.isPresent()) {
+            OauthClientDetails oauthClient = oauthClientDetails.get();
             if (verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
                 try {
                     String token = jwtTokenUtil.generateAccessToken(
@@ -109,17 +109,17 @@ public class TokenService {
         throw new ResponseStatusException(HttpStatusCode.valueOf(401), "UnAuthorised");
     }
 
-    private Token refreshToken(){
+    private Token refreshToken() {
         try {
             EncryptedJWT jwt = jwtTokenUtil.decodeToken(tokenRequest.refreshToken());
 
-            if (jwt.getJWTClaimsSet().getStringClaim("typ").equals("refresh")){
+            if (jwt.getJWTClaimsSet().getStringClaim("typ").equals("refresh")) {
                 String userID = jwt.getJWTClaimsSet().getStringClaim("uid");
                 Optional<User> userOptional = userRepository.findByEmailOrUsername(userID, userID);
                 Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
                 if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
                     User user = userOptional.get();
-                    OauthClientDetails  oauthClient  = oauthClientDetails.get();
+                    OauthClientDetails oauthClient = oauthClientDetails.get();
                     log.info("GENERATING TOKEN FROM REFRESH TOKEN : {} ", user.getEmail());
                     if (verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
                         try {
@@ -145,7 +145,7 @@ public class TokenService {
         return null;
     }
 
-    public Object getTokenInfo(String token){
+    public Object getTokenInfo(String token) {
         return jwtTokenUtil.verifyToken(token);
     }
 

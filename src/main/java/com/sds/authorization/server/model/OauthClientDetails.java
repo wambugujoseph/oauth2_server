@@ -24,7 +24,7 @@ public class OauthClientDetails {
     private String authorizedGrantTypes;
     private String authorities;
     private String additionalInformation;
-    private String autoapprove;
+    private String autoApprove;
     private Integer numberUser;
     private String username;
     private String applicationName;
@@ -131,12 +131,12 @@ public class OauthClientDetails {
 
     @Basic
     @Column(name = "autoapprove")
-    public String getAutoapprove() {
-        return autoapprove;
+    public String getAutoApprove() {
+        return autoApprove;
     }
 
-    public void setAutoapprove(String autoapprove) {
-        this.autoapprove = autoapprove;
+    public void setAutoApprove(String autoapprove) {
+        this.autoApprove = autoapprove;
     }
 
     @Override
@@ -154,12 +154,12 @@ public class OauthClientDetails {
                 Objects.equals(authorizedGrantTypes, that.authorizedGrantTypes) &&
                 Objects.equals(authorities, that.authorities) &&
                 Objects.equals(additionalInformation, that.additionalInformation) &&
-                Objects.equals(autoapprove, that.autoapprove);
+                Objects.equals(autoApprove, that.autoApprove);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(clientId, clientSecret, webServerRedirectUri, scope, accessTokenValidity, refreshTokenValidity, resourceIds, authorizedGrantTypes, authorities, additionalInformation, autoapprove);
+        return Objects.hash(clientId, clientSecret, webServerRedirectUri, scope, accessTokenValidity, refreshTokenValidity, resourceIds, authorizedGrantTypes, authorities, additionalInformation, autoApprove);
     }
 
     @Basic

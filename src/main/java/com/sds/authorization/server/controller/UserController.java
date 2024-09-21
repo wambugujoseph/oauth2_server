@@ -1,6 +1,7 @@
 package com.sds.authorization.server.controller;
 
 import com.sds.authorization.server.dto.UserCreatedDto;
+import com.sds.authorization.server.model.CustomResponse;
 import com.sds.authorization.server.service.UserService;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,9 +25,9 @@ public class UserController {
 
     @PostMapping(value = "/api/v1/register/user", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> createUser(@RequestBody UserCreatedDto userCreatedDto){
+    public ResponseEntity<Object> createUser(@RequestBody UserCreatedDto userCreatedDto) {
         userService.createUser(userCreatedDto);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.status(200).body(CustomResponse.builder().responseCode("200").responseDesc("Registered in Auth Server user " + userCreatedDto.email()).build());
 
     }
 }
