@@ -1,5 +1,6 @@
 package com.sds.authorization.server.model;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.*;
 
 /**
@@ -13,9 +14,10 @@ import lombok.*;
 @Getter
 @Setter
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CustomResponse {
-
     String responseCode;
     String responseDesc;
+    Object data;
 }
 

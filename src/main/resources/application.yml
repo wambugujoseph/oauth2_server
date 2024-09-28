@@ -2,11 +2,11 @@ server:
   port: 18450
 spring:
   application:
-    name: authserver
+    name: authorization
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:service_delivery_auth} #?createDatabaseIfNotExist=true
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:sds_auth} #?createDatabaseIfNotExist=true
     username: postgres
-    password: root
+    password: 2525
   jpa:
     hibernate:
       ddl-auto: update
@@ -17,9 +17,12 @@ spring:
       continue-on-error: true
 
 eureka:
+  instance:
+    prefer-ip-address: true
+    hostname: localhost
   client:
     serviceUrl:
-      defaultZone: http://${EUREKA_SERVER_HOST_IP:localhost}:8093/eureka/
+      defaultZone: http://${EUREKA_SERVER_HOST_IP:127.0.0.1}:8093/eureka/
 app:
   smtp_host: ${APP_E_SMTP_HOST:smtp.gmail.com}
   username: ${APP_E_USERNAME:oyakecounter@gmail.com}

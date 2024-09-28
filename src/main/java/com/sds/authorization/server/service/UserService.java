@@ -3,6 +3,7 @@ package com.sds.authorization.server.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sds.authorization.server.dto.UserCreatedDto;
+import com.sds.authorization.server.model.CustomResponse;
 import com.sds.authorization.server.model.Role;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.repo.UserRepository;
@@ -16,7 +17,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 
 import static com.sds.authorization.server.security.PasswordGenerator.generateRandomPassword;
 
@@ -35,9 +38,18 @@ public class UserService {
     @Autowired
     private EmailNotificationService emailNotificationService;
 
-    public void createUser(UserCreatedDto userCreatedDto) {
+    public CustomResponse createUser(UserCreatedDto userCreatedDto) {
         String randomPassword = generateRandomPassword(8);
         try {
+            //Check Duplicate
+            Optional<User> optionalUser = userRepository.findByEmailOrUsername(userCreatedDto.email(), userCreatedDto.username());
+            if (optionalUser.isPresent()) {
+                return CustomResponse.builder()
+                        .responseCode("400")
+                        .responseDesc("User already exist")
+                        .build();
+            }
+
             User user = User.builder()
                     .username(userCreatedDto.username())
                     .email(userCreatedDto.email())
@@ -52,22 +64,32 @@ public class UserService {
                     .build();
 
             log.info("NEW user {} ", new ObjectMapper().writeValueAsString(user));
-
             userRepository.save(user);
-            try {
-                //emailNotificationService.sendNotification("Use password "+randomPassword, userCreatedDto.email());
-                Mono<Object> res = emailNotificationService.sendNotification(String.format(EmailNotificationService.EmailTemplate, userCreatedDto.username(), randomPassword), userCreatedDto.email());
-                res.subscribe(r -> log.info(res.toString()),
-                        //Error Handler
-                        err -> log.error("Error Occurred:: " + err.getMessage()),
-                        //on Complete processing
-                        () -> log.info("Email sent "));
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-            }
 
-        } catch (JsonProcessingException e) {
+            CompletableFuture<String> emailSending = CompletableFuture.supplyAsync(() -> {
+                try {
+                    emailNotificationService.sendNotification(String.format(EmailNotificationService.EmailTemplate,
+                            userCreatedDto.username(), randomPassword), userCreatedDto.email());
+                    return "Password update email has been send to "+userCreatedDto.email();
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                    return "Error sending email "+e.getMessage();
+                }
+            });
+            emailSending.thenAccept(log::info);
+
+            return CustomResponse.builder()
+                    .responseCode("200")
+                    .responseDesc("User created Successfully")
+                    .build();
+
+        } catch (
+                JsonProcessingException e) {
             log.error(e.getMessage(), e);
+            return CustomResponse.builder()
+                    .responseCode("500")
+                    .responseDesc("Internal server error")
+                    .build();
         }
     }
 }

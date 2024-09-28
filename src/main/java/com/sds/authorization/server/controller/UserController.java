@@ -26,8 +26,8 @@ public class UserController {
     @PostMapping(value = "/api/v1/register/user", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> createUser(@RequestBody UserCreatedDto userCreatedDto) {
-        userService.createUser(userCreatedDto);
-        return ResponseEntity.status(200).body(CustomResponse.builder().responseCode("200").responseDesc("Registered in Auth Server user " + userCreatedDto.email()).build());
+        CustomResponse customResponse = userService.createUser(userCreatedDto);
+        return ResponseEntity.status(Integer.parseInt(customResponse.getResponseCode())).body(customResponse);
 
     }
 }
