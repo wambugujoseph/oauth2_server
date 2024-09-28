@@ -16,10 +16,10 @@ spring:
     init:
       continue-on-error: true
 
-#eureka:
-#  client:
-#    serviceUrl:
-#      defaultZone: http://${EUREKA_SERVER_HOST_IP:localhost}:8093/eureka/
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${EUREKA_SERVER_HOST_IP:localhost}:8093/eureka/
 app:
   smtp_host: ${APP_E_SMTP_HOST:smtp.gmail.com}
   username: ${APP_E_USERNAME:oyakecounter@gmail.com}
