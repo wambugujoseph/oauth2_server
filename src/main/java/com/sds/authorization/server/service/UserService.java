@@ -53,6 +53,7 @@ public class UserService {
             User user = User.builder()
                     .username(userCreatedDto.username())
                     .email(userCreatedDto.email())
+                    .phoneNumber(userCreatedDto.phoneNumber())
                     .userId(("USR-" + Long.toString(Long.parseLong(new Date().getTime() + "" + new Random().nextInt(9)), 36)).toUpperCase())
                     .password(new BCryptPasswordEncoder(
                             BCryptPasswordEncoder.BCryptVersion.$2A, 11, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8))).encode(randomPassword))
