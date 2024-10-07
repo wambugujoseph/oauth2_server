@@ -49,7 +49,7 @@ public class UserService {
                         .responseDesc("User already exist")
                         .build();
             }
-
+            log.info("user dto {}",userCreatedDto);
             User user = User.builder()
                     .username(userCreatedDto.username())
                     .email(userCreatedDto.email())

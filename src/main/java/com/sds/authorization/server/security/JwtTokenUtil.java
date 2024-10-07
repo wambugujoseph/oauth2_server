@@ -85,6 +85,7 @@ public class JwtTokenUtil {
                 .claim("typ", "access_token")
                 .claim("name", user.getUsername())
                 .claim("email", user.getEmail())
+                .claim("userid",user.getUserId())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
