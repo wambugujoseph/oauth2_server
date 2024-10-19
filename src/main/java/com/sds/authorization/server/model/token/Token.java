@@ -22,6 +22,7 @@ public record Token (
         String tokenType,
         @JsonProperty("expire_in")
         long expireIn,
-        String scope
+        String scope,
+        boolean verified
 ) {
 }

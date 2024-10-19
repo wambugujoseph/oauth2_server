@@ -6,9 +6,7 @@ import com.sds.authorization.server.model.token.TokenRequest;
 import com.sds.authorization.server.security.TokenService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -43,8 +41,12 @@ public class TokenController {
                             tokenRequest.getOrDefault("refresh_token", "")
                     )
             );
-            if (token != null) {
+            if (token != null && token.verified()) {
                 return ResponseEntity.ok(token);
+            }else if (token != null){
+                HttpHeaders httpHeaders = new HttpHeaders();
+                httpHeaders.add("Location", "/client/sds-core/api/v1/specialist/"+tokenRequest.get("username"));
+                return new ResponseEntity<>(token, httpHeaders,HttpStatus.OK);
             }
             return ResponseEntity.status(401).body(CustomResponse.builder()
                     .responseCode("401")

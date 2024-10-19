@@ -1,10 +1,8 @@
 package com.sds.authorization.server.controller;
 
 import com.sds.authorization.server.dto.ClientCreateDto;
-import com.sds.authorization.server.dto.UserCreatedDto;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.service.ClientService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

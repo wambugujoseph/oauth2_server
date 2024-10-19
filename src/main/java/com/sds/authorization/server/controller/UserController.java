@@ -30,4 +30,12 @@ public class UserController {
         return ResponseEntity.status(Integer.parseInt(customResponse.getResponseCode())).body(customResponse);
 
     }
+
+    @PutMapping (value = "/api/v1/update/user", consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Object> updateUser(@RequestBody UserCreatedDto userCreatedDto) {
+        CustomResponse customResponse = userService.updateUser(userCreatedDto);
+        return ResponseEntity.status(Integer.parseInt(customResponse.getResponseCode())).body(customResponse);
+
+    }
 }

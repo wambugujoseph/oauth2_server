@@ -11,6 +11,7 @@ public record UserCreatedDto(
         String email,
         String password,
         String phoneNumber,
-        String category
+        String category,
+        boolean isKycVerified
 ) {
 }

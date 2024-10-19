@@ -72,7 +72,8 @@ public class TokenService {
                             refresh,
                             "Bearer",
                             oauthClient.getAccessTokenValidity(),
-                            "read,write"
+                            "read,write",
+                            user.isKycVerified()
                     );
                 } catch (JOSEException e) {
                     log.error(e.getMessage(), e);
@@ -99,7 +100,8 @@ public class TokenService {
                             null,
                             "Bearer",
                             oauthClient.getAccessTokenValidity(),
-                            "read,write"
+                            "read,write",
+                            true
                     );
                 } catch (JOSEException e) {
                     log.error(e.getMessage(), e);
@@ -130,7 +132,8 @@ public class TokenService {
                                     refresh,
                                     "Bearer",
                                     oauthClient.getAccessTokenValidity(),
-                                    "read,write"
+                                    "read,write",
+                                    user.isKycVerified()
                             );
                         } catch (JOSEException e) {
                             log.error(e.getMessage(), e);

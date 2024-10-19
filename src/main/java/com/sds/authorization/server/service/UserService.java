@@ -61,6 +61,7 @@ public class UserService {
                     .accountNonExpired(true)
                     .credentialsNonExpired(true)
                     .accountNonLocked(true)
+                    .isKycVerified(userCreatedDto.isKycVerified())
                     .roles(List.of(Role.builder().name(userCreatedDto.category()).build()))
                     .build();
 
@@ -90,6 +91,25 @@ public class UserService {
             return CustomResponse.builder()
                     .responseCode("500")
                     .responseDesc("Internal server error")
+                    .build();
+        }
+    }
+
+    public CustomResponse updateUser(UserCreatedDto createdDto){
+        Optional<User> optionalUser = userRepository.findByEmailOrUsername(createdDto.email(), createdDto.username());
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            user.setPhoneNumber(createdDto.phoneNumber());
+            user.setKycVerified(createdDto.isKycVerified());
+            userRepository.save(user);
+            return CustomResponse.builder()
+                    .responseCode("200")
+                    .responseDesc("User successfully update")
+                    .build();
+        }else {
+            return CustomResponse.builder()
+                    .responseCode("400")
+                    .responseDesc("User already exist")
                     .build();
         }
     }

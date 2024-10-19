@@ -81,11 +81,12 @@ public class JwtTokenUtil {
                 .expirationTime(exp) // expires in 10 minutes
                 .notBeforeTime(now)
                 .issueTime(now)
-                .claim("roles", user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
+                .claim("roles", user.isKycVerified() ? user.getRoles().stream().map(Role::getName).collect(Collectors.toList()) : "NOT-VERIFIED")
                 .claim("typ", "access_token")
                 .claim("name", user.getUsername())
                 .claim("email", user.getEmail())
                 .claim("userid",user.getUserId())
+                .claim("verified", user.isKycVerified())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
