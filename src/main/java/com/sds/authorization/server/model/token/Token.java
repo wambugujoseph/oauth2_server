@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 /**
  * @author Joseph Kibe
  * Created on May 31, 2024.
@@ -22,6 +24,7 @@ public record Token (
         String tokenType,
         @JsonProperty("expire_in")
         long expireIn,
+        List<String> roles,
         String scope,
         boolean verified
 ) {

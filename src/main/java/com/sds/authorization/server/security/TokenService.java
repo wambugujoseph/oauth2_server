@@ -3,6 +3,7 @@ package com.sds.authorization.server.security;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.sds.authorization.server.model.OauthClientDetails;
+import com.sds.authorization.server.model.Role;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
@@ -72,6 +73,7 @@ public class TokenService {
                             refresh,
                             "Bearer",
                             oauthClient.getAccessTokenValidity(),
+                            user.getRoles().stream().map(Role::getName).toList(),
                             "read,write",
                             user.isKycVerified()
                     );
@@ -100,6 +102,7 @@ public class TokenService {
                             null,
                             "Bearer",
                             oauthClient.getAccessTokenValidity(),
+                            new ArrayList<>(),
                             "read,write",
                             true
                     );
@@ -132,6 +135,7 @@ public class TokenService {
                                     refresh,
                                     "Bearer",
                                     oauthClient.getAccessTokenValidity(),
+                                    new ArrayList<>(),
                                     "read,write",
                                     user.isKycVerified()
                             );
