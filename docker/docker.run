@@ -1,0 +1,10 @@
+#!/bin/bash
+
+VERSION=1.0.0
+APP=sds_auth-$VERSION
+
+TAG=sds_auth:$VERSION
+DIR=target
+cp ../$DIR/$APP.jar $APP.jar && docker build -f auth.Dockerfile -t crypticdev/$TAG . && rm -rf $APP && rm $APP.jar
+
+docker push crypticdev/$TAG
