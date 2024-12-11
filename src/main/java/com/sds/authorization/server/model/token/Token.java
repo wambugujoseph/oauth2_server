@@ -16,6 +16,8 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record Token (
+        @JsonProperty("mfa_token")
+        String mfaToken,
         @JsonProperty("access_token")
         String accessToken,
         @JsonProperty("refresh_token")

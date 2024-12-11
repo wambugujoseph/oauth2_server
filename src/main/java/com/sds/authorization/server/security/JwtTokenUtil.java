@@ -5,22 +5,30 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.sds.authorization.server.model.AuthUserDetail;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.Role;
 import com.sds.authorization.server.model.User;
+import com.sds.authorization.server.service.NotificationService;
+import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.security.interfaces.RSAPublicKey;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 /**
  * @author Joseph Kibe
@@ -32,10 +40,12 @@ import java.util.stream.Collectors;
 @Component
 public class JwtTokenUtil {
 
-    private KeyStore keyStore;
+    private final KeyStore keyStore;
+    private final NotificationService notificationService;
 
-    public JwtTokenUtil(KeyStore keyStore) {
+    public JwtTokenUtil(KeyStore keyStore, NotificationService notificationService) {
         this.keyStore = keyStore;
+        this.notificationService = notificationService;
     }
 
     private static EncryptedJWT getEncryptedJWT(String keyId, JWTClaimsSet jwtClaims) {
@@ -85,7 +95,7 @@ public class JwtTokenUtil {
                 .claim("typ", "access_token")
                 .claim("name", user.getUsername())
                 .claim("email", user.getEmail())
-                .claim("userid",user.getUserId())
+                .claim("userid", user.getUserId())
                 .claim("verified", user.isKycVerified())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
@@ -118,39 +128,42 @@ public class JwtTokenUtil {
         return jwt.serialize();
     }
 
-    /*
+
     public String generateMfaToken(Authentication authentication, String jwtId, String code) {
 
         try {
-            // Context holder has the authorized uses
-            // If a user is authenticated
+
             if (authentication.isAuthenticated()) {
                 String userEmail = "";
-                String partnerUsername;
+                String username;
                 String userCompId = "";
                 String id = "";
 
-                if (authentication.getPrincipal() instanceof CustomUserDetails customUserDetails) {
-                    userEmail = customUserDetails.getEmail();
-                    partnerUsername = customUserDetails.getUsername();
-                    id = customUserDetails.getUserId();
-                    userCompId = customUserDetails.getUserCompanyId();
+                if (authentication.getPrincipal() instanceof User authUserDetail) {
+                    userEmail = authUserDetail.getEmail();
+                    username = authUserDetail.getUsername();
+                    id = authUserDetail.getUserId();
                 } else {
-                    partnerUsername = authentication.getPrincipal().toString();
+                    username = authentication.getPrincipal().toString();
                 }
 
-                Partner partner = Optional.ofNullable(partnerService.getPartnerByPartnerUsername(partnerUsername)).orElse(new Partner());
+                String msg = "Your BridgeUI OTP code is: <b>" + code + "</b>. It will be active for the next 02:00 minutes.";
+                notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", msg,
+                        "BRIDGE OTP",
+                        List.of(userEmail).toArray(new String[0])
+                );
+
                 LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
                 Date now = Date.from(current.toInstant(ZoneOffset.UTC));
                 Date expire = Date.from(current.plusSeconds(120).toInstant(ZoneOffset.UTC));
-                String keyId = Optional.ofNullable(partner.getKeyId()).orElse("none");
+                String keyId = "none";
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 authorities.add(new SimpleGrantedAuthority("pre-auth"));
 
                 JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
                         .issuer("SLA")
-                        .subject(partner.getPartnerId())
+                        .subject(username)
                         .audience("partner")
                         .expirationTime(expire) // expires in 10 minutes
                         .notBeforeTime(now)
@@ -166,20 +179,16 @@ public class JwtTokenUtil {
                 EncryptedJWT jwt = getEncryptedJWT(keyId, jwtClaims);
                 jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
 
-                return ConvertTo.jsonString(new LinkedHashMap<>() {{
-                    put("mfa_token", jwt.serialize());
-                    put("token_type", TOKEN_TYPE_MFA);
-                }});
+                return jwt.serialize();
             }
             authentication.setAuthenticated(false);
-            throw new ResponseStatusException(HttpStatusCode.valueOf(HttpStatus.UNAUTHORIZED.value()));
+            throw new ResponseStatusException(HttpStatusCode.valueOf(UNAUTHORIZED.value()));
         } catch (Exception e) {
-            log.error("Error Creating the Token: " + e.getMessage());
-
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, UNAUTHORIZED);
+            log.error("Error Creating the Token: {}", e.getMessage());
+            throw new ResponseStatusException(UNAUTHORIZED, UNAUTHORIZED.toString());
         }
     }
-     */
+
 
     public Object verifyToken(String token) {
         try {
@@ -227,7 +236,7 @@ public class JwtTokenUtil {
         } catch (Exception e) {
             log.warn("Unauthorised: " + e.getMessage());
             SecurityContextHolder.clearContext();
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UnAuthorised");
+            throw new ResponseStatusException(UNAUTHORIZED, "UnAuthorised");
         }
         return null;
     }

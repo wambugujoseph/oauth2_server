@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -16,6 +17,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.context.request.RequestContextListener;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
  * @author Joseph Kibe
@@ -36,7 +40,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @EnableWebMvc
 @EnableWebSecurity
 //JSR250 to allow Use of AllowedRole Annotation instead of Spring PreAuthorization
-public class WebSecurityConfiguration {
+public class WebSecurityConfiguration implements WebMvcConfigurer {
 
     @Autowired
     @Qualifier("customAuthenticationEntryPoint")
@@ -45,6 +49,18 @@ public class WebSecurityConfiguration {
     AppProps config;
     @Autowired
     private CustomerOncePerRequestFilter perRequestFilter;
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry
+                .addResourceHandler(
+                        "/resources/**",
+                        "/fonts/**",
+                        "/css/**",
+                        "/vendor/**"
+                ).resourceChain(true)
+                .addResolver(new PathResourceResolver());
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -63,11 +79,17 @@ public class WebSecurityConfiguration {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
                         authorizationManagerRequestMatcherRegistry
-                                .requestMatchers("/login", "/login/**", "/logout", "/resources/**",
-                                        "/api/v1/tokeninfo", "/api/v1/oauth/token",
+
+                                .requestMatchers(
+                                        "/api/v1/client-resource/login",
+                                        "/login/**",
+                                        "/logout",
+                                        "/api/v1/tokeninfo",
+                                        "/api/v1/oauth/token",
                                         "/api/v1/update/user",
                                         "/api/v1/register/user",
-                                        "/api/v1/register/client")
+                                        "/api/v1/register/client"
+                                )
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())
@@ -77,9 +99,9 @@ public class WebSecurityConfiguration {
                         session.sessionCreationPolicy(sessionCreationPolicy))
                 .formLogin(httpSecurityFormLoginConfigurer ->
                         httpSecurityFormLoginConfigurer
-                                .loginPage("/login")
+                                .loginPage("/api/v1/client-resource/login")
                                 .defaultSuccessUrl("/api/v1/doc/", true)
-                                                               );
+                );
 
         http.addFilterBefore(perRequestFilter,
                 UsernamePasswordAuthenticationFilter.class);
@@ -97,7 +119,7 @@ public class WebSecurityConfiguration {
      *
      * @return RequestContextListener
      */
-   @Bean
+    @Bean
     public RequestContextListener requestContextListener() {
         return new RequestContextListener();
     }
@@ -114,5 +136,7 @@ public class WebSecurityConfiguration {
 
         return sessionCreationPolicy;
     }
+
+
 
 }

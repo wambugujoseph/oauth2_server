@@ -1,5 +1,7 @@
 package com.sds.authorization.server.utility;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.extern.slf4j.Slf4j;
@@ -31,5 +33,27 @@ public class SdsObjMapper<IN, OUT> {
 
     public OUT get() {
         return this.convertedToObjet;
+    }
+
+    public static JsonNode jsonNodeFromStr(String data) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.readTree(data);
+
+        } catch (JsonProcessingException e) {
+            log.error(e.getMessage(), e);
+            return null;
+        }
+    }
+
+    public static String jsonString(Object objectToConvert) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.writeValueAsString(objectToConvert);
+
+        } catch (JsonProcessingException e) {
+            log.error(e.getMessage(),e);
+            return null;
+        }
     }
 }

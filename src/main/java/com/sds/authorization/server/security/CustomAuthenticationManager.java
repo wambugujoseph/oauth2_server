@@ -1,5 +1,6 @@
 package com.sds.authorization.server.security;
 
+import com.sds.authorization.server.model.User;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,4 +24,13 @@ public class CustomAuthenticationManager implements AuthenticationProvider {
     public boolean supports(Class<?> authentication) {
         return authentication.equals(UsernamePasswordAuthenticationToken.class);
     }
+//
+//    private Authentication successfulAuthentication(final Authentication authentication, final User user) {
+//        UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
+//                user, user.getPassword(), user.getAuthorities());
+//
+//        token.setDetails(authentication.getDetails());
+//
+//        return token;
+//    }
 }

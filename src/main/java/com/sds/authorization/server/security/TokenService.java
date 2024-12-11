@@ -10,7 +10,12 @@ import com.sds.authorization.server.model.token.TokenRequest;
 import com.sds.authorization.server.repo.OauthClientRepository;
 import com.sds.authorization.server.repo.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,7 +23,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * @author Joseph Kibe
@@ -51,7 +58,8 @@ public class TokenService {
         this.tokenRequest = tokenRequest;
         log.info("Handler");
         return switch (GrantType.valueOf(tokenRequest.grantType().toUpperCase())) {
-            case PASSWORD -> passwordToken();
+            case PASSWORD -> mfaToken();
+            case MFA_OTP -> passwordToken();
             case CLIENT_CREDENTIALS -> clientCredentialsToken();
             case REFRESH_TOKEN -> refreshToken();
         };
@@ -69,6 +77,7 @@ public class TokenService {
                     String token = jwtTokenUtil.generateAccessToken(user, oauthClient, "test");
                     String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, "test");
                     return new Token(
+                            null,
                             token,
                             refresh,
                             "Bearer",
@@ -78,6 +87,40 @@ public class TokenService {
                             user.isKycVerified()
                     );
                 } catch (JOSEException e) {
+                    log.error(e.getMessage(), e);
+                }
+            }
+        }
+        throw new ResponseStatusException(HttpStatusCode.valueOf(401), "UnAuthorised");
+    }
+
+    private Token mfaToken() {
+        Optional<User> userOptional = userRepository.findByEmailOrUsername(tokenRequest.username(), tokenRequest.username());
+        Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
+        if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
+            User user = userOptional.get();
+            OauthClientDetails oauthClient = oauthClientDetails.get();
+            log.info("GENERATING MFA TOKEN FOR : {} ", user.getEmail());
+            if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
+
+                UsernamePasswordAuthenticationToken authenticatedToken = new UsernamePasswordAuthenticationToken(
+                        user, user.getPassword(), Collections.singleton(new SimpleGrantedAuthority("pre-auth")));
+                authenticatedToken.setDetails(user);
+                SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
+                try {
+                    String token = jwtTokenUtil.generateMfaToken(SecurityContextHolder.getContext().getAuthentication(),
+                            UUID.randomUUID().toString(), generateOtp());
+                    return new Token(
+                            token,
+                            null,
+                            null,
+                            "Bearer",
+                            oauthClient.getAccessTokenValidity(),
+                            user.getRoles().stream().map(Role::getName).toList(),
+                            "read,write",
+                            user.isKycVerified()
+                    );
+                } catch (Exception e) {
                     log.error(e.getMessage(), e);
                 }
             }
@@ -98,6 +141,7 @@ public class TokenService {
                             oauthClient,
                             "test");
                     return new Token(
+                            null,
                             token,
                             null,
                             "Bearer",
@@ -131,6 +175,7 @@ public class TokenService {
                             String token = jwtTokenUtil.generateAccessToken(user, oauthClient, "test");
                             String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, "test");
                             return new Token(
+                                    null,
                                     token,
                                     refresh,
                                     "Bearer",
@@ -164,8 +209,12 @@ public class TokenService {
         }
     }
 
+    public String generateOtp() {
+        return RandomStringUtils.random(6, "123456789ACEFGHJKLMNPRTWXYZ123456789");
+    }
 
     enum GrantType {
+        MFA_OTP("mfa_otp"),
         PASSWORD("password"),
         CLIENT_CREDENTIALS("client_credentials"),
         REFRESH_TOKEN("refresh_token");

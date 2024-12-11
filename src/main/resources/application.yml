@@ -1,12 +1,12 @@
 server:
-  port: 18450
+  port: ${APP_PORT:8092}
 spring:
   application:
     name: authorization
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:sds_auth} #?createDatabaseIfNotExist=true
     username: postgres
-    password: root
+    password: admin
   jpa:
     hibernate:
       ddl-auto: update
@@ -23,10 +23,12 @@ eureka:
   client:
     serviceUrl:
       defaultZone: http://${EUREKA_SERVER_HOST_IP:127.0.0.1}:8093/eureka/
+
 app:
   smtp_host: ${APP_E_SMTP_HOST:smtp.gmail.com}
-  username: ${APP_E_USERNAME:oyakecounter@gmail.com}
-  password: ${APP_E_PASSWORD:frgdzwzajljjidyg}
+  smtp_port: ${APP_E_SMTP_PORT:587}
+  email_username: ${APP_E_USERNAME:oyakecounter@gmail.com}
+  email_password: ${APP_E_PASSWORD:frgdzwzajljjidyg}
   is_app_live: false
   pvt_key: CWL7BHxucOONaZ2syQMXbOCQjO2f2d+Fkes78L5cO1+73HGb0sLaBwYyhiDzwMbuuZv9NDWluK9ayzM5cNaBGqdbBA2jsokwi8/8z2kcboNAFoIsV+sqYW+G0S8kPRKncnkGpZAE4rID/meFvV0Jloic+kCUmRm7lFc9IqhWVw3Y7twFc6TOHtseu4iuoB+SKFvWYcxSQX6+N8aQTemfnOSptBAiPmxL3dJ4WBs219y0hau0l7aFlazVnGLtaIPjjz4du2hdFctZs7VxH2vMGx7Nq66kstJxnLGo0KZ9iY5JbLJoGBjBO15owif7eTgFv38BZ2sCxVwrXIjNuIANnMtIco/wkKRoX+2U6Y7QNmmwFDpA6sCosaWykRyUswBlhnQpH/hiiphKVZORjChqL09I2pDYGAATYStQcIUPgvb8xJE9N2RfXE5p7Mpa6YpP9kSvraLNRdheDMuG06DTc6EJUnS5vxYoyqrCW8um1vOByXqCTWqu7c8rz6vR16CMwXX4BXbQLxQfwHafhs0z/3ypzmRamPpAAha7ETyXpeNjv4H/ZAvYtbl12hvcRyroKPtG2kX5uKB8ZxSA1dsSGxy79is+sQ3j/TdagGWYXNayRom/2qflBIOxan9Y5wBRxN48r33WGnDRn6//ja8tBZYBLyWo4QLfukdHadBSx+FAV/8qSP7CGr66vYaC4eQ53qEGFdo+6zHmKy6y6DROzZtT+b3DAYzz9OG7uVC6bvlgDszOGvmjZXddQ4BX4KJgrh0Ro/hfYfPTXvyPLFhNL81OtVQxEhCnl/4KId23Ct2RTAhR504QlDidthFBjvAqXS84ciwddGkGYk+mB806/bA8nzqOZZSkXBpUwzuAWmGDooXyG95q0xsDbZ9TNPO0cI4pzgzVI/M5UqgT/KfvMnrXYkrrkK7fjI1LKtz7TH3T/yggK6jpG7pMpBqODRHS8Kkp4ZLUInsqYHAGA9EOr0ocKxsi2tfNn8rkW2T8/GYrTZcWZFtnaBAusu9BLObfiadLpPyUFPyFJJNvNyv1G2CszypLQLFGgRswAkZFgDRkNrIbSIcnrCU29QFtJ+ptphej11d3akdGVGLud4zAcaFukjy5lFgLhWLPdE9MaoHPLwMyFy+CMWCLevTzNbacC0cV7XC9+O+HX1CJxwUP5EAVQf/tzrJZYj0x/iPIuM1sQUue1M75kZExPbL3dUsLLK/9lkP5lTJp4JvEXOylkEPkNLAER5R9zTiNQQdK+ZoKeTJanXvmr6N/Wmem/0LPSVuNLfLlM2MkWdpgudKQAtGQoZEq965GmmchVOmvw7CD10omUqDAGcA5UrR/M08CdUi1vjugAHre9zbPC/3uCAceLNKYE7ITWlWcIiDsZkAlse4Daxm5IPSL7F1u9xcCa66UrY9pwvnaftvViIiOyeXRJTm0cZDk37RghNjkptEjYjCBKhvdOwz6W5BgsxWHnOxDclDVSi6b7K/Y2Nfw3MkM7l2bSPriMU71F7voQoiUSfqLSFWDtgLfSgY/3SK1aRfqpRnZuwbnhbWJ+kP8sEe+dmeaYK4ofXalhv/qW7Leu9n7QRVQF5aBvPGCcgt9Pft60JlkxfH6CGSKAExIe46UayFnByX2zptcNUdDFlc=
   pub_key: UPqsBujNjE/trLS0vOs+3rbmWh6uzYygYqftwCdVaKtg8DdDUh4USM50Jn3RR1iqixP3zmOs2OckswhOgOlRaDLwkrm12m3ygN32BN85BAr5NQRsZNSDlR4sWfRrFVSIAm748CNmzkZB3/xvVPh/q0aQWbhVaK3y8E6KNHSM2UbLHUYyeCLhDuAwMt0SfE/YQY0gch8zW8tmvfW7CNdiDgJSefRXEjW2jG6EW0vCJwmCx56jR5r3KXcAlEJ+Qi1t+1/LUP4t7GV4q7KpWBuoVdUOBUZGj6/11uJ/qY8KQAfw3MkrXGzBWwwjxRSjGm86mveDtgwReHnppeSHURt/tXKPegQ6Kqe7g5c3xyCyOLZ0FoMGnCaSXvoWZPWOerYVEknZkGONUw5wfKCm6ItEyA==

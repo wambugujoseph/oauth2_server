@@ -1,31 +1,36 @@
 package com.sds.authorization.server.controller;
 
-import com.sds.authorization.server.dto.ClientCreateDto;
-import com.sds.authorization.server.model.OauthClientDetails;
-import com.sds.authorization.server.service.ClientService;
-import org.springframework.http.MediaType;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.net.URI;
 
 /**
- * @author Joseph Kibe
- * Created on June 13, 2024.
- * Time 8:15 AM
- */
+ * @author joseph.kibe
+ * Created On 10/12/2024 12:09
+ **/
 
-@RestController
+@Controller
 public class ClientController {
 
-    private final ClientService clientService;
+    @PostMapping(value = "api/v1/client-resource/login")
+    public ResponseEntity<?> login(@RequestParam(value = "redirect_url", required = false) String redirectUrl){
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create(redirectUrl));
 
-    public ClientController(ClientService clientService) {
-        this.clientService = clientService;
+        return ResponseEntity.status(HttpStatus.TEMPORARY_REDIRECT)
+                .headers(headers)
+                .build();
     }
 
-    @PostMapping(value = "/api/v1/register/client", consumes = MediaType.APPLICATION_JSON_VALUE,
-            produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> createUser(@RequestBody ClientCreateDto clientCreateDto){
-        OauthClientDetails clientDetails = clientService.createOauthClientDetails(clientCreateDto);
-        return ResponseEntity.ok(clientDetails);
+    @GetMapping(value = "api/v1/client-resource/login")
+    public String loginPage(@RequestParam(value = "redirect_url", required = false) String redirectUrl){;
+        return "/login";
     }
 }

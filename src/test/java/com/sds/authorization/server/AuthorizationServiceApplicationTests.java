@@ -7,6 +7,7 @@ import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.repo.UserRepository;
 import com.sds.authorization.server.security.RSAKeyGenerator;
+import com.sds.authorization.server.service.NotificationService;
 import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.weaver.patterns.IToken;
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.util.Assert;
 
+import java.util.List;
 import java.util.Optional;
 
 @SpringBootTest
@@ -24,6 +26,9 @@ class AuthorizationServiceApplicationTests {
 
     @Autowired
     private UserRepository userRepo;
+
+    @Autowired
+    private NotificationService notificationService;
 
     @Test
     void contextLoads() {
@@ -50,6 +55,17 @@ class AuthorizationServiceApplicationTests {
         try {
             log.info("------- {}",new ObjectMapper().writeValueAsString(new OauthClientDetails()));
         } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    void email(){
+        try {
+            notificationService.sendEmailNotification("--", "Test", "MYEMAIL", List.of("josewambugu25@gmail.com").toArray(new String[0]));
+
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }

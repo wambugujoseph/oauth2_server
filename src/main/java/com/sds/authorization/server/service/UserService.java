@@ -33,10 +33,13 @@ import static com.sds.authorization.server.security.PasswordGenerator.generateRa
 @Slf4j
 public class UserService {
 
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private EmailNotificationService emailNotificationService;
+    private final UserRepository userRepository;
+    private final NotificationService emailNotificationService;
+
+    public UserService(UserRepository userRepository, NotificationService emailNotificationService) {
+        this.userRepository = userRepository;
+        this.emailNotificationService = emailNotificationService;
+    }
 
     public CustomResponse createUser(UserCreatedDto userCreatedDto) {
         String randomPassword = generateRandomPassword(8);
@@ -68,17 +71,7 @@ public class UserService {
             log.info("NEW user {} ", new ObjectMapper().writeValueAsString(user));
             userRepository.save(user);
 
-            CompletableFuture<String> emailSending = CompletableFuture.supplyAsync(() -> {
-                try {
-                    emailNotificationService.sendNotification(String.format(EmailNotificationService.EmailTemplate,
-                            userCreatedDto.username(), randomPassword), userCreatedDto.email());
-                    return "Password update email has been send to "+userCreatedDto.email();
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
-                    return "Error sending email "+e.getMessage();
-                }
-            });
-            emailSending.thenAccept(log::info);
+
 
             return CustomResponse.builder()
                     .responseCode("200")
@@ -101,6 +94,8 @@ public class UserService {
             User user = optionalUser.get();
             user.setPhoneNumber(createdDto.phoneNumber());
             user.setKycVerified(createdDto.isKycVerified());
+            user.setPassword(new BCryptPasswordEncoder(
+                    BCryptPasswordEncoder.BCryptVersion.$2A, 11, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8))).encode(createdDto.password()));
             userRepository.save(user);
             return CustomResponse.builder()
                     .responseCode("200")

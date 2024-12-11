@@ -10,8 +10,12 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app")
 public record AppProps(
-    boolean isAppLive,
-    String pubKey,
-    String pvtKey
+        String smtpHost,
+        String smtpPort,
+        String emailUsername,
+        String emailPassword,
+        boolean isAppLive,
+        String pubKey,
+        String pvtKey
 ) {
 }
