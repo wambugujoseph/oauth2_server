@@ -38,7 +38,9 @@ public class TokenController {
                             tokenRequest.getOrDefault("audience", ""),
                             tokenRequest.getOrDefault("username", ""),
                             tokenRequest.getOrDefault("password", ""),
-                            tokenRequest.getOrDefault("refresh_token", "")
+                            tokenRequest.getOrDefault("refresh_token", ""),
+                            tokenRequest.getOrDefault("mfa_token", ""),
+                            tokenRequest.getOrDefault("mfa_code", "")
                     )
             );
             if (token != null && token.verified()) {
@@ -48,13 +50,12 @@ public class TokenController {
                 httpHeaders.add("Location", "/client/sds-core/api/v1/specialist/"+tokenRequest.get("username"));
                 return new ResponseEntity<>(token, httpHeaders,HttpStatus.OK);
             }
-            return ResponseEntity.status(401).body(CustomResponse.builder()
-                    .responseCode("401")
-                    .responseDesc("UnAuthorized"));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        return ResponseEntity.badRequest().build();
+        return ResponseEntity.status(401).body(CustomResponse.builder()
+                .responseCode("401")
+                .responseDesc("UnAuthorized").build());
     }
 
     @GetMapping(value ="/api/v1/tokeninfo", consumes =MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

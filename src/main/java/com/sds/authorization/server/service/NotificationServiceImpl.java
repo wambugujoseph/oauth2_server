@@ -115,8 +115,8 @@ public class NotificationServiceImpl implements NotificationService {
                     <tr align='center'>
                         <td style="width:100%%;padding:0;border-style:solid none;border-top-width:1pt;border-bottom-width:1pt;border-top-color:#EDEFF2;border-bottom-color:#EDEFF2;box-sizing:border-box;">
                             <div align="center">
-                                <table border="1" cellpadding="0" cellspacing="0"
-                                       style="background-color:white;width:427.5pt;box-sizing:border-box;">
+                                <table cellpadding="0" cellspacing="0"
+                                       style="background-color:white;width:500.5pt;box-sizing:border-box; border-color:#A0A0A0 #A0A0A0 #ffffff #A0A0A0; border-width:1px">
                                     <tbody>
                                     <tr style="background-color:#7c74cc;">
                                         <td style="padding:18.75pt 0;">
@@ -132,21 +132,20 @@ public class NotificationServiceImpl implements NotificationService {
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding:26.25pt;box-sizing:border-box;">
+                                        <td style="padding:26.25pt;box-sizing:border-box; color: rgb(61, 72, 82); border-width:1px">
                                             <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
-                                                <span style="color: rgb(61, 72, 82);  ">Hi%s,</span>
+                                                <span>Hi%s,</span>
                                             </p>
                                             <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
-                                                <span style="color: rgb(61, 72, 82); ">%s</span>
+                                                <span>%s</span>
                                             </p>
                                             <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt;">
-                                            <span style="color: rgb(61, 72, 82); font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">Kind Regards,<br
+                                            <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">Kind Regards,<br
                                                     aria-hidden="true">Switch-Bridge</span>
                                             </p>
-                                            <hr/>
                                             <p style="margin-top:0; box-sizing:border-box; text-align: center;">
-                                                        <span style="color:#03540c; font-size:9pt; text-align: center;">
-                                                            CONFIDENTIALITY NOTICE: This message (and any attachment) is confidential and intended for the sole use of the individual or entity to which it is addressed. If you are not the intended recipient, you must not review, retransmit, convert to hard-copy, copy, use or disseminate this email or any of its attachments. If you received this email in error, please notify the sender immediately and delete it. This notice is automatically appended to all Internet email.</span>
+                                                        <span style="color: rgb(174, 174, 174); font-size:9pt; text-align: center;">
+                                                           </span>
                                             </p>
                                         </td>
                                     </tr>
@@ -160,7 +159,12 @@ public class NotificationServiceImpl implements NotificationService {
                                                     <td style="padding:10pt;box-sizing:border-box;">
                                                         <p align="center"
                                                            style="text-align:center;margin-top:0;box-sizing:border-box;line-height:18.0pt;">
-                                                            <span style="color:; font-size: 9pt;">©2024 SOCF. All rights reserved.</span>
+                                                            <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">
+                                                            ©2024. All rights reserved.</span>
+                                                               <hr/>
+                                                             CONFIDENTIALITY NOTICE: This message (and any attachment) is confidential and intended for the sole use of the individual or entity to which it 
+                                                             is addressed. If you are not the intended recipient, you must not review, retransmit, convert to hard-copy, copy, use or disseminate this email or any of its attachments. If you received this email in error, please notify the sender immediately and delete it. This notice is automatically appended to all Internet email.
+                                                            
                                                         </p></td>
                                                     </tr>
                                                     </tbody>

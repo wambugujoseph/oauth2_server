@@ -2,6 +2,7 @@ package com.sds.authorization.server.security;
 
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.EncryptedJWT;
+import com.nimbusds.jwt.JWTClaimsSet;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.Role;
 import com.sds.authorization.server.model.User;
@@ -9,6 +10,7 @@ import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
 import com.sds.authorization.server.repo.OauthClientRepository;
 import com.sds.authorization.server.repo.UserRepository;
+import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.http.HttpStatusCode;
@@ -22,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
@@ -59,39 +62,73 @@ public class TokenService {
         log.info("Handler");
         return switch (GrantType.valueOf(tokenRequest.grantType().toUpperCase())) {
             case PASSWORD -> mfaToken();
-            case MFA_OTP -> passwordToken();
+            case MFA_TOKEN -> passwordToken();
             case CLIENT_CREDENTIALS -> clientCredentialsToken();
             case REFRESH_TOKEN -> refreshToken();
         };
     }
 
     private Token passwordToken() {
-        Optional<User> userOptional = userRepository.findByEmailOrUsername(tokenRequest.username(), tokenRequest.username());
-        Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
-        if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
-            User user = userOptional.get();
-            OauthClientDetails oauthClient = oauthClientDetails.get();
-            log.info("GENERATING TOKEN FOR : {} ", user.getEmail());
-            if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
-                try {
-                    String token = jwtTokenUtil.generateAccessToken(user, oauthClient, "test");
-                    String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, "test");
-                    return new Token(
-                            null,
-                            token,
-                            refresh,
-                            "Bearer",
-                            oauthClient.getAccessTokenValidity(),
-                            user.getRoles().stream().map(Role::getName).toList(),
-                            "read,write",
-                            user.isKycVerified()
-                    );
-                } catch (JOSEException e) {
-                    log.error(e.getMessage(), e);
+
+        String errorMsg= "UnAuthorised";
+        try {
+            if (tokenRequest.grantType().equalsIgnoreCase(GrantType.MFA_TOKEN.toString())) {
+
+                Object object = jwtTokenUtil.verifyToken(tokenRequest.mfaToken());
+                if (object instanceof EncryptedJWT encryptedJWT) {
+                    JWTClaimsSet claimsSet = encryptedJWT.getJWTClaimsSet();
+                    String userEmail = claimsSet.getStringClaim("email");
+                    String clientId = claimsSet.getStringClaim("client_id");
+                    String mfaCode = claimsSet.getStringClaim("code");
+
+                    if (mfaCode.equalsIgnoreCase(tokenRequest.mfaCode())) {
+                        Optional<User> userOptional = userRepository.findByEmailOrUsername(userEmail, userEmail);
+                        Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(clientId);
+
+                        if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
+                            return getToken(userOptional.get(), oauthClientDetails.get());
+                        }
+                    }
+
+                }else{
+                    errorMsg = SdsObjMapper.jsonString(object);
+                }
+            } else {
+                Optional<User> userOptional = userRepository.findByEmailOrUsername(tokenRequest.username(), tokenRequest.username());
+                Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
+                if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
+                    User user = userOptional.get();
+                    OauthClientDetails oauthClient = oauthClientDetails.get();
+                    log.info("GENERATING TOKEN FOR : {} ", user.getEmail());
+                    if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
+                        try {
+                            return getToken(user, oauthClient);
+                        } catch (JOSEException e) {
+                            log.error(e.getMessage(), e);
+                        }
+                    }
                 }
             }
+
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
         }
-        throw new ResponseStatusException(HttpStatusCode.valueOf(401), "UnAuthorised");
+        throw new ResponseStatusException(HttpStatusCode.valueOf(401), errorMsg);
+    }
+
+    private Token getToken(User user, OauthClientDetails oauthClient) throws JOSEException {
+        String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), "test");
+        String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), "test");
+        return new Token(
+                null,
+                token,
+                refresh,
+                "Bearer",
+                oauthClient.getAccessTokenValidity(),
+                user.getRoles().stream().map(Role::getName).toList(),
+                "read,write",
+                user.isKycVerified()
+        );
     }
 
     private Token mfaToken() {
@@ -109,7 +146,7 @@ public class TokenService {
                 SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
                 try {
                     String token = jwtTokenUtil.generateMfaToken(SecurityContextHolder.getContext().getAuthentication(),
-                            UUID.randomUUID().toString(), generateOtp());
+                            UUID.randomUUID().toString(), oauthClient.getClientId(), generateOtp());
                     return new Token(
                             token,
                             null,
@@ -139,6 +176,7 @@ public class TokenService {
                                     .roles(new ArrayList<>())
                                     .build(),
                             oauthClient,
+                            oauthClient.getClientId(),
                             "test");
                     return new Token(
                             null,
@@ -163,17 +201,20 @@ public class TokenService {
             EncryptedJWT jwt = jwtTokenUtil.decodeToken(tokenRequest.refreshToken());
 
             if (jwt.getJWTClaimsSet().getStringClaim("typ").equals("refresh")) {
-                String userID = jwt.getJWTClaimsSet().getStringClaim("uid");
+                String userID = jwt.getJWTClaimsSet().getStringClaim("email");
+                String clientId = jwt.getJWTClaimsSet().getStringClaim("client_id");
                 Optional<User> userOptional = userRepository.findByEmailOrUsername(userID, userID);
-                Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
+                Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(clientId);
                 if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
                     User user = userOptional.get();
-                    OauthClientDetails oauthClient = oauthClientDetails.get();
+                            OauthClientDetails oauthClient = oauthClientDetails.get();
                     log.info("GENERATING TOKEN FROM REFRESH TOKEN : {} ", user.getEmail());
-                    if (verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
+                    String clientSecret = tokenRequest.clientSecret();
+                    String clientID = tokenRequest.clientId();
+                    if ((clientID.isBlank() & clientSecret.isBlank()) || verifyPassword(clientID, clientSecret)) {
                         try {
-                            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, "test");
-                            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, "test");
+                            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), "test");
+                            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), "test");
                             return new Token(
                                     null,
                                     token,
@@ -214,7 +255,7 @@ public class TokenService {
     }
 
     enum GrantType {
-        MFA_OTP("mfa_otp"),
+        MFA_TOKEN("mfa_token"),
         PASSWORD("password"),
         CLIENT_CREDENTIALS("client_credentials"),
         REFRESH_TOKEN("refresh_token");

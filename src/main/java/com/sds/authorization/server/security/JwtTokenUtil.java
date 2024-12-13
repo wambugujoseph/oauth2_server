@@ -79,7 +79,7 @@ public class JwtTokenUtil {
         return new EncryptedJWT(header, jwtClaims);
     }
 
-    public String generateAccessToken(User user, OauthClientDetails oauthClientDetails, String keyId) throws JOSEException {
+    public String generateAccessToken(User user, OauthClientDetails oauthClientDetails, String clientID,String keyId) throws JOSEException {
         LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
         Date now = Date.from(current.toInstant(ZoneOffset.UTC));
         Date exp = Date.from(current.plusSeconds(oauthClientDetails.getAccessTokenValidity()).toInstant(ZoneOffset.UTC));
@@ -97,6 +97,7 @@ public class JwtTokenUtil {
                 .claim("email", user.getEmail())
                 .claim("userid", user.getUserId())
                 .claim("verified", user.isKycVerified())
+                .claim("client_id", clientID)
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
@@ -105,7 +106,7 @@ public class JwtTokenUtil {
         return jwt.serialize();
     }
 
-    public String generateRefreshToken(User user, OauthClientDetails oauthClientDetails, String keyId) throws JOSEException {
+    public String generateRefreshToken(User user, OauthClientDetails oauthClientDetails, String clientId, String keyId) throws JOSEException {
         LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
         Date now = Date.from(current.toInstant(ZoneOffset.UTC));
         Date exp = Date.from(current.plusSeconds(oauthClientDetails.getRefreshTokenValidity()).toInstant(ZoneOffset.UTC));
@@ -120,6 +121,7 @@ public class JwtTokenUtil {
                 .claim("typ", "refresh")
                 .claim("uid", user.getUsername())
                 .claim("email", user.getEmail())
+                .claim("client_id", clientId)
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
@@ -129,7 +131,7 @@ public class JwtTokenUtil {
     }
 
 
-    public String generateMfaToken(Authentication authentication, String jwtId, String code) {
+    public String generateMfaToken(Authentication authentication, String jwtId, String clientId, String code) {
 
         try {
 
@@ -156,7 +158,7 @@ public class JwtTokenUtil {
                 LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
                 Date now = Date.from(current.toInstant(ZoneOffset.UTC));
                 Date expire = Date.from(current.plusSeconds(120).toInstant(ZoneOffset.UTC));
-                String keyId = "none";
+                String keyId = "test";
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 authorities.add(new SimpleGrantedAuthority("pre-auth"));
@@ -164,7 +166,7 @@ public class JwtTokenUtil {
                 JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
                         .issuer("SLA")
                         .subject(username)
-                        .audience("partner")
+                        .audience("client")
                         .expirationTime(expire) // expires in 10 minutes
                         .notBeforeTime(now)
                         .issueTime(now)
@@ -173,6 +175,7 @@ public class JwtTokenUtil {
                         .claim("usercompid", userCompId)
                         .claim("code", code)
                         .claim("email", userEmail)
+                        .claim("client_id", clientId)
                         .jwtID(jwtId)
                         .build();
 
@@ -209,7 +212,7 @@ public class JwtTokenUtil {
                 }};
             }
         } catch (Exception e) {
-            log.error("Invalid token: " + e.getMessage());
+            log.error("Invalid token: {}", e.getMessage());
         }
         return new LinkedHashMap<String, String>() {{
             put("status", "invalid");

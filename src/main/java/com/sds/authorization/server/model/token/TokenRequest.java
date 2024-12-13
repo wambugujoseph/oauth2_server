@@ -23,6 +23,10 @@ public record TokenRequest(
         @JsonProperty(value = "password", defaultValue = "-")
         String password,
         @JsonProperty(value = "refresh_token", defaultValue = "-")
-        String refreshToken
+        String refreshToken,
+        @JsonProperty(value = "mfa_token", defaultValue = "-")
+        String mfaToken,
+        @JsonProperty(value = "mfa_code", defaultValue = "-")
+        String mfaCode
 ) {
 }
