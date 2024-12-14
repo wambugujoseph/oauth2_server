@@ -131,7 +131,7 @@ public class JwtTokenUtil {
     }
 
 
-    public String generateMfaToken(Authentication authentication, String jwtId, String clientId, String code) {
+    public String generateMfaToken(Authentication authentication, String jwtId, String clientId, String code, String tokenCode) {
 
         try {
 
@@ -174,6 +174,7 @@ public class JwtTokenUtil {
                         .claim("usp", authorities)//User Permission
                         .claim("usercompid", userCompId)
                         .claim("code", code)
+                        .claim("token_code", tokenCode)
                         .claim("email", userEmail)
                         .claim("client_id", clientId)
                         .jwtID(jwtId)

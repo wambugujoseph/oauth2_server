@@ -14,7 +14,7 @@ public record ClientLoginRequest(
         String scope,
         String codeChallenge,
         String codeChallengeMethod,
-        String userName,
+        String username,
         String password
 ) {
 }

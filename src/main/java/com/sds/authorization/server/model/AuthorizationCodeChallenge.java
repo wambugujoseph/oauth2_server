@@ -2,9 +2,7 @@ package com.sds.authorization.server.model;
 
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.sql.Timestamp;
 
@@ -17,7 +15,10 @@ import java.sql.Timestamp;
 @Table(name = "authorization_code_challenge")
 @Getter
 @Setter
+@Builder
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class AuthorizationCodeChallenge {
 
     @Id
@@ -39,8 +40,10 @@ public class AuthorizationCodeChallenge {
     private String username;
     @Column(name = "response_type")
     private String responseType;
-    @Column(name = "expire_at")
-    private long expireAt;
-    @Column(name = "is_challenge_used")
-    private boolean isChallengeUsed;
+    @Column(name = "code")
+    private String code;
+    @Column(name = "code_expire_at")
+    private long codeExpireAt;
+    @Column(name = "is_code_used")
+    private boolean isCodeUsed;
 }

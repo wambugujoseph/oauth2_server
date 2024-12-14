@@ -1,14 +1,14 @@
 package com.sds.authorization.server.controller;
 
+import com.sds.authorization.server.model.AuthorizationCodeChallenge;
 import com.sds.authorization.server.model.CustomResponse;
 import com.sds.authorization.server.model.token.ClientLoginRequest;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
-import com.sds.authorization.server.security.TokenService;
+import com.sds.authorization.server.service.TokenService;
 import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.checkerframework.checker.units.qual.C;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.coyote.BadRequestException;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -47,12 +47,20 @@ public class TokenController {
                             tokenRequest.getOrDefault("mfa_code", "")
                     )
             );
-            if (token != null && token.verified()) {
-                return ResponseEntity.ok(token);
-            } else if (token != null) {
-                HttpHeaders httpHeaders = new HttpHeaders();
-                httpHeaders.add("Location", "/client/sds-core/api/v1/specialist/" + tokenRequest.get("username"));
-                return new ResponseEntity<>(token, httpHeaders, HttpStatus.OK);
+
+            if (token != null) {
+                if (token.mfaToken() == null && token.accessToken() == null) {
+                    HttpHeaders httpHeaders = new HttpHeaders();
+                    httpHeaders.setLocation(URI.create(token.redirectUri() + "#code=" + token.code() + "&code_challenge=" + token.codeChallenge()));
+                    return ResponseEntity.status(302).headers(httpHeaders).build();
+
+                } else if (token.verified()) {
+                    return ResponseEntity.ok(token);
+                } else {
+                    HttpHeaders httpHeaders = new HttpHeaders();
+                    httpHeaders.add("Location", "/client/sds-core/api/v1/specialist/" + tokenRequest.get("username"));
+                    return new ResponseEntity<>(token, httpHeaders, HttpStatus.OK);
+                }
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -65,20 +73,25 @@ public class TokenController {
     @PostMapping(value = "/api/v1/oauth/authorize", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> loginClient(@RequestParam Map<String, String> authorizeRequest) {
 
-        ClientLoginRequest clientLoginRequest = new ClientLoginRequest(
-                authorizeRequest.get("response_type"),
-                authorizeRequest.get("client_id"),
-                authorizeRequest.get("redirect_uri"),
-                authorizeRequest.get("scope"),
-                authorizeRequest.get("code_challenge"),
-                authorizeRequest.get("code_challenge_method")
-        );
+        try {
+            ClientLoginRequest clientLoginRequest = new ClientLoginRequest(
+                    authorizeRequest.get("response_type"),
+                    authorizeRequest.get("client_id"),
+                    authorizeRequest.get("redirect_uri"),
+                    authorizeRequest.get("scope"),
+                    authorizeRequest.get("code_challenge"),
+                    authorizeRequest.get("code_challenge_method"),
+                    authorizeRequest.get("username"),
+                    authorizeRequest.get("password")
+            );
 
-        log.info("Request {}", SdsObjMapper.jsonString(clientLoginRequest));
+            Token token = tokenService.processAuthorizationRequest(clientLoginRequest);
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-        //httpHeaders.setLocation(URI.create(redirectUri+"#code=rrrttt55667&state="+state));
-        return ResponseEntity.status(200).headers(httpHeaders).build();
+            log.info("Request {}", SdsObjMapper.jsonString(clientLoginRequest));
+            return ResponseEntity.ok(token);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
     }
 

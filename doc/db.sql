@@ -141,8 +141,9 @@ CREATE TABLE public.authorization_code_challenge(
     client_id varchar(255) NOT NULL,
     username varchar (255) NOT NULL,
     response_type varchar (20) NOT NULL,
-    expire_at bigint NOT NULL,
-    is_challenge_used boolean NOT NULL DEFAULT false,
+    code varchar (200) NOT NULL,
+    code_expire_at bigint NOT NULL,
+    is_code_used boolean NOT NULL DEFAULT false,
 
     CONSTRAINT CODE_CHALLENGE_PK PRIMARY KEY(code_challenge_id)
 )
