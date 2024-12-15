@@ -3,10 +3,7 @@ package com.sds.authorization.server.service;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.sds.authorization.server.model.AuthorizationCodeChallenge;
-import com.sds.authorization.server.model.OauthClientDetails;
-import com.sds.authorization.server.model.Role;
-import com.sds.authorization.server.model.User;
+import com.sds.authorization.server.model.*;
 import com.sds.authorization.server.model.token.ClientLoginRequest;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
@@ -17,10 +14,12 @@ import com.sds.authorization.server.security.JwtTokenUtil;
 import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.coyote.BadRequestException;
-import org.checkerframework.checker.units.qual.A;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -28,10 +27,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Principal;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.*;
 
@@ -72,7 +73,80 @@ public class TokenService {
             case MFA_TOKEN -> passwordToken();
             case CLIENT_CREDENTIALS -> clientCredentialsToken();
             case REFRESH_TOKEN -> refreshToken();
+            case AUTHORIZATION_CODE -> authorizationCode();
         };
+    }
+
+    private Token authorizationCode() {
+        String error = "";
+
+        try {
+            String condeVerifier = this.tokenRequest.codeVerifier();
+            String code = this.tokenRequest.code();
+
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication.isAuthenticated()) {
+
+                Object principal = authentication.getPrincipal();
+                String clientId = principal.toString();
+
+                List<AuthorizationCodeChallenge> codeChallenges = codeChallengeRepo.findAllByCodeAndClientId(code, clientId);
+                AuthorizationCodeChallenge codeChallenge = !codeChallenges.isEmpty() ? codeChallenges.getFirst() : null;
+
+                long currentTime = LocalDateTime.now().toEpochSecond(ZoneOffset.UTC);
+
+                if (codeChallenge != null &&
+                        codeChallenge.getCodeExpireAt() > currentTime &&  //Expiration check
+                        codeChallengeVerified(CodeChallengeMethod.valueOf(codeChallenge.getCodeChallengeMethod()),  //challenge verification
+                                codeChallenge.getCodeChallenge(), condeVerifier)
+                ) {
+                    Optional<User> user = userRepository.findByEmailOrUsername(codeChallenge.getUsername(), codeChallenge.getUsername());
+                    if (principal instanceof OauthClientDetails oauthClientDetails) {
+                        return getToken(user.orElse(null), oauthClientDetails, null, null);
+                    } else {
+                        Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(clientId);
+                        return getToken(user.orElse(null), oauthClientDetails.orElse(null), null, null);
+                    }
+                } else {
+                    error = "Token challenge invalid or expired";
+                }
+            } else {
+                error = "Invalid client id or secret";
+            }
+
+            return getToken(null, null, null, TokenError.builder()
+                    .error(UnsuccessfulResponse.unauthorized_client)
+                    .errorDescription(error)
+                    .errorUri("")
+                    .build());
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return getToken(null, null, null, TokenError.builder()
+                    .error(UnsuccessfulResponse.server_error)
+                    .errorDescription(e.getMessage())
+                    .errorUri("")
+                    .build());
+        }
+
+    }
+
+    private boolean codeChallengeVerified(CodeChallengeMethod challengeMethod, String codeChallenge, String codeVerifier) {
+
+        try {
+            if (challengeMethod.equals(CodeChallengeMethod.PLAIN)) {
+                return codeChallenge.equals(codeVerifier);
+            } else {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                byte[] encodedHash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
+                HexFormat hexFormat = HexFormat.of();
+                String result = hexFormat.formatHex(encodedHash);
+
+                return result.equals(codeChallenge);
+            }
+        } catch (NoSuchAlgorithmException e) {
+            log.error(e.getMessage(), e);
+        }
+        return false;
     }
 
     private Token passwordToken() {
@@ -94,7 +168,7 @@ public class TokenService {
                         Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(clientId);
 
                         if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
-                            return getToken(userOptional.get(), oauthClientDetails.get(), tokenCode);
+                            return getToken(userOptional.get(), oauthClientDetails.get(), tokenCode, null);
                         }
                     }
 
@@ -109,11 +183,7 @@ public class TokenService {
                     OauthClientDetails oauthClient = oauthClientDetails.get();
                     log.info("GENERATING TOKEN FOR : {} ", user.getEmail());
                     if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
-                        try {
-                            return getToken(user, oauthClient, null);
-                        } catch (JOSEException e) {
-                            log.error(e.getMessage(), e);
-                        }
+                        return getToken(user, oauthClient, null, null);
                     }
                 }
             }
@@ -124,42 +194,55 @@ public class TokenService {
         throw new ResponseStatusException(HttpStatusCode.valueOf(401), errorMsg);
     }
 
-    private Token getToken(User user, OauthClientDetails oauthClient, String tokenCode) throws JOSEException {
-        String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), "test");
-        String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), "test");
-        if (tokenCode != null) {
+    private Token getToken(User user, OauthClientDetails oauthClient, String tokenCode, TokenError error) {
 
-            List<AuthorizationCodeChallenge> codeChallenges = codeChallengeRepo.findAllByCodeAndClientId(tokenCode, oauthClient.getClientId());
+        try {
+            if (error != null) {
+                return new Token(null, null, null, null, 0,
+                        null, null, false, null,
+                        null, null, error);
+            }
 
-            AuthorizationCodeChallenge codeChallenge = codeChallenges.getFirst();
+            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), "test");
+            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), "test");
+            if (tokenCode != null) {
 
-            return new Token(
-                    null,
-                    null,
-                    null,
-                    null,
-                    0,
-                    null,
-                    null,
-                    false,
-                    tokenCode,
-                    codeChallenge.getCodeChallenge(),
-                    codeChallenge.getRedirectUrl()
-            );
-        } else {
-            return new Token(
-                    null,
-                    token,
-                    refresh,
-                    "Bearer",
-                    oauthClient.getAccessTokenValidity(),
-                    user.getRoles().stream().map(Role::getName).toList(),
-                    "read,write",
-                    user.isKycVerified(),
-                    null,
-                    null,
-                    null
-            );
+                List<AuthorizationCodeChallenge> codeChallenges = codeChallengeRepo.findAllByCodeAndClientId(tokenCode, oauthClient.getClientId());
+
+                AuthorizationCodeChallenge codeChallenge = codeChallenges.getFirst();
+
+                return new Token(
+                        null, null, null, null,
+                        0,
+                        null,
+                        null,
+                        false,
+                        tokenCode,
+                        codeChallenge.getCodeChallenge(),
+                        codeChallenge.getRedirectUrl(),
+                        null
+                );
+            } else {
+                return new Token(
+                        null,
+                        token,
+                        refresh,
+                        "Bearer",
+                        oauthClient.getAccessTokenValidity(),
+                        user.getRoles().stream().map(Role::getName).toList(),
+                        "read,write",
+                        user.isKycVerified(),
+                        null, null, null, null
+                );
+            }
+        } catch (Exception e) {
+            return new Token(null, null, null, null, 0,
+                    null, null, false, null,
+                    null, null, TokenError.builder()
+                    .error(UnsuccessfulResponse.server_error)
+                    .errorDescription("Internal service error Occurred")
+                    .errorUri("")
+                    .build());
         }
     }
 
@@ -177,16 +260,23 @@ public class TokenService {
                 authenticatedToken.setDetails(user);
                 SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
                 try {
-                    return mfaToken(oauthClient, user, null);
+                    return mfaToken(oauthClient, user, null, null);
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
                 }
             }
         }
-        throw new ResponseStatusException(HttpStatusCode.valueOf(401), "UnAuthorised");
+        return mfaToken(null, null, null, TokenError.builder()
+                .build());
     }
 
-    private Token mfaToken(OauthClientDetails oauthClient, User user, String tokenCode) {
+    private Token mfaToken(OauthClientDetails oauthClient, User user, String tokenCode, TokenError error) {
+        if (error != null) {
+            return new Token(null, null, null, null, 0,
+                    null, null, false, null,
+                    null, null, error);
+        }
+
         String token = jwtTokenUtil.generateMfaToken(SecurityContextHolder.getContext().getAuthentication(),
                 UUID.randomUUID().toString(), oauthClient.getClientId(), generateOtp(), tokenCode);
 
@@ -199,9 +289,7 @@ public class TokenService {
                 user.getRoles().stream().map(Role::getName).toList(),
                 "read,write",
                 user.isKycVerified(),
-                tokenCode,
-                null,
-                null
+                tokenCode, null, null, null
         );
     }
 
@@ -227,9 +315,7 @@ public class TokenService {
                             new ArrayList<>(),
                             "read,write",
                             true,
-                            null,
-                            null,
-                            null
+                            null, null, null, null
                     );
                 } catch (JOSEException e) {
                     log.error(e.getMessage(), e);
@@ -267,9 +353,7 @@ public class TokenService {
                                     new ArrayList<>(),
                                     "read,write",
                                     user.isKycVerified(),
-                                    null,
-                                    null,
-                                    null
+                                    null, null, null, null
                             );
                         } catch (JOSEException e) {
                             log.error(e.getMessage(), e);
@@ -319,7 +403,7 @@ public class TokenService {
                 authenticatedToken.setDetails(user);
                 SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
 
-                return mfaToken(oauthClientDetails.get(), user, tokenCode);
+                return mfaToken(oauthClientDetails.get(), user, tokenCode, null);
 
             }
         } catch (Exception e) {
@@ -342,7 +426,7 @@ public class TokenService {
     }
 
     public String generateOtp() {
-        return randomString(6);
+        return randomString(6).toUpperCase();
     }
 
     private String tokenCode() {
@@ -358,7 +442,8 @@ public class TokenService {
         MFA_TOKEN("mfa_token"),
         PASSWORD("password"),
         CLIENT_CREDENTIALS("client_credentials"),
-        REFRESH_TOKEN("refresh_token");
+        REFRESH_TOKEN("refresh_token"),
+        AUTHORIZATION_CODE("authorization_code");
 
         private final String value;
 

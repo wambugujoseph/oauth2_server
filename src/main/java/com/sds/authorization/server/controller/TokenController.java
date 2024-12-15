@@ -44,7 +44,9 @@ public class TokenController {
                             tokenRequest.getOrDefault("password", ""),
                             tokenRequest.getOrDefault("refresh_token", ""),
                             tokenRequest.getOrDefault("mfa_token", ""),
-                            tokenRequest.getOrDefault("mfa_code", "")
+                            tokenRequest.getOrDefault("mfa_code", ""),
+                            tokenRequest.getOrDefault("code_verifier", ""),
+                            tokenRequest.getOrDefault("code", "")
                     )
             );
 

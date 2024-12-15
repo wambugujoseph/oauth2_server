@@ -3,6 +3,7 @@ package com.sds.authorization.server.model.token;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.sds.authorization.server.model.TokenError;
 
 import java.util.List;
 
@@ -15,7 +16,7 @@ import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record Token (
+public record Token(
         @JsonProperty("mfa_token")
         String mfaToken,
         @JsonProperty("access_token")
@@ -31,6 +32,7 @@ public record Token (
         boolean verified,
         String code,
         String codeChallenge,
-        String redirectUri
+        String redirectUri,
+        TokenError error
 ) {
 }

@@ -27,6 +27,10 @@ public record TokenRequest(
         @JsonProperty(value = "mfa_token", defaultValue = "-")
         String mfaToken,
         @JsonProperty(value = "mfa_code", defaultValue = "-")
-        String mfaCode
+        String mfaCode,
+        @JsonProperty(value = "code_verifier", defaultValue = "")
+        String codeVerifier,
+        @JsonProperty(value = "code", defaultValue = "")
+        String code
 ) {
 }
