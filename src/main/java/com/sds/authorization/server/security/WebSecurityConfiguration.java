@@ -84,7 +84,7 @@ public class WebSecurityConfiguration implements WebMvcConfigurer {
                                         "/login/**",
                                         "/logout",
                                         "/api/v1/tokeninfo",
-                                        //"/api/v1/oauth/token",
+                                        "/api/v1/oauth/token",
                                         "/api/v1/oauth/authorize",
                                         "/api/v1/update/user",
                                         "/api/v1/register/user",

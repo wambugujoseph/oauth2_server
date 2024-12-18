@@ -2,6 +2,8 @@ package com.sds.authorization.server.controller;
 
 import com.sds.authorization.server.model.AuthorizationCodeChallenge;
 import com.sds.authorization.server.model.CustomResponse;
+import com.sds.authorization.server.model.TokenError;
+import com.sds.authorization.server.model.UnsuccessfulResponse;
 import com.sds.authorization.server.model.token.ClientLoginRequest;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
@@ -51,7 +53,7 @@ public class TokenController {
             );
 
             if (token != null) {
-                if (token.error() != null){
+                if (token.error() != null) {
                     return ResponseEntity.badRequest().body(token.error());
                 } else if (token.mfaToken() == null && token.accessToken() == null) {
                     HttpHeaders httpHeaders = new HttpHeaders();
@@ -88,13 +90,16 @@ public class TokenController {
                     authorizeRequest.get("username"),
                     authorizeRequest.get("password")
             );
-
-            Token token = tokenService.processAuthorizationRequest(clientLoginRequest);
-
             log.info("Request {}", SdsObjMapper.jsonString(clientLoginRequest));
+            Token token = tokenService.processAuthorizationRequest(clientLoginRequest);
             return ResponseEntity.ok(token);
+
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.info(e.getMessage(), e);
+            return ResponseEntity.status(500).body(TokenError.builder()
+                    .error(UnsuccessfulResponse.server_error)
+                    .errorDescription("Unknown error occurred")
+                    .build());
         }
 
     }

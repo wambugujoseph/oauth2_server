@@ -102,10 +102,13 @@ public class TokenService {
                 if (codeChallenge != null &&
                         codeChallenge.getCodeExpireAt() > currentTime &&  //Expiration check
                         codeChallengeVerified(CodeChallengeMethod.valueOf(codeChallenge.getCodeChallengeMethod()),  //challenge verification
-                                codeChallenge.getCodeChallenge(), condeVerifier)
+                                codeChallenge.getCodeChallenge(), condeVerifier) &&
+                        !codeChallenge.isCodeUsed()
                 ) {
                     Optional<User> user = userRepository.findByEmailOrUsername(codeChallenge.getUsername(), codeChallenge.getUsername());
                     if (principal instanceof OauthClientDetails oauthClientDetails) {
+                        codeChallenge.setCodeUsed(true);
+                        codeChallengeRepo.save(codeChallenge);
                         return getToken(user.orElse(null), oauthClientDetails, null, null);
                     } else {
                         Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(clientId);
@@ -412,7 +415,7 @@ public class TokenService {
                         .username(loginRequest.username())
                         .responseType(loginRequest.responseType())
                         .code(tokenCode)
-                        .codeExpireAt(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC))
+                        .codeExpireAt(LocalDateTime.now().plusHours(6).toEpochSecond(ZoneOffset.UTC))
                         .isCodeUsed(false)
                         .build();
 
@@ -425,12 +428,19 @@ public class TokenService {
 
                 return mfaToken(oauthClientDetails.get(), user, tokenCode, null);
 
+            } else {
+                return mfaToken(null, null, null, TokenError.builder()
+                        .error(UnsuccessfulResponse.unauthorized_client)
+                        .errorDescription("Invalid username or password")
+                        .build());
             }
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        throw new BadRequestException("Username or password invalid");
-
+        return mfaToken(null, null, null, TokenError.builder()
+                .error(UnsuccessfulResponse.server_error)
+                .errorDescription("Failed to Authorize user")
+                .build());
     }
 
     public Object getTokenInfo(String token) {
