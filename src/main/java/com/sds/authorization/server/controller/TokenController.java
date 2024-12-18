@@ -51,7 +51,9 @@ public class TokenController {
             );
 
             if (token != null) {
-                if (token.mfaToken() == null && token.accessToken() == null) {
+                if (token.error() != null){
+                    return ResponseEntity.badRequest().body(token.error());
+                } else if (token.mfaToken() == null && token.accessToken() == null) {
                     HttpHeaders httpHeaders = new HttpHeaders();
                     httpHeaders.setLocation(URI.create(token.redirectUri() + "#code=" + token.code() + "&code_challenge=" + token.codeChallenge()));
                     return ResponseEntity.status(302).headers(httpHeaders).build();

@@ -90,6 +90,10 @@ public class TokenService {
                 Object principal = authentication.getPrincipal();
                 String clientId = principal.toString();
 
+                if (principal instanceof OauthClientDetails oauthClientDetails) {
+                    clientId = oauthClientDetails.getClientId();
+                }
+
                 List<AuthorizationCodeChallenge> codeChallenges = codeChallengeRepo.findAllByCodeAndClientId(code, clientId);
                 AuthorizationCodeChallenge codeChallenge = !codeChallenges.isEmpty() ? codeChallenges.getFirst() : null;
 
@@ -171,7 +175,6 @@ public class TokenService {
                             return getToken(userOptional.get(), oauthClientDetails.get(), tokenCode, null);
                         }
                     }
-
                 } else {
                     errorMsg = SdsObjMapper.jsonString(object);
                 }
@@ -187,11 +190,16 @@ public class TokenService {
                     }
                 }
             }
-
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
-        throw new ResponseStatusException(HttpStatusCode.valueOf(401), errorMsg);
+        return new Token(null, null, null, null, 0,
+                null, null, false, null,
+                null, null, TokenError.builder()
+                .error(UnsuccessfulResponse.unauthorized_client)
+                .errorDescription("Unauthorized")
+                .errorUri("")
+                .build());
     }
 
     private Token getToken(User user, OauthClientDetails oauthClient, String tokenCode, TokenError error) {
@@ -248,25 +256,37 @@ public class TokenService {
 
     private Token mfaToken() {
         Optional<User> userOptional = userRepository.findByEmailOrUsername(tokenRequest.username(), tokenRequest.username());
-        Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(tokenRequest.clientId());
-        if (userOptional.isPresent() && oauthClientDetails.isPresent()) {
-            User user = userOptional.get();
-            OauthClientDetails oauthClient = oauthClientDetails.get();
-            log.info("GENERATING MFA TOKEN FOR : {} ", user.getEmail());
-            if (verifyPassword(tokenRequest.password(), user.getPassword()) && verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication.isAuthenticated() && authentication.getPrincipal() instanceof OauthClientDetails oauthClientDetails) {
+            if (userOptional.isPresent()) {
+                User user = userOptional.get();
+                log.info("GENERATING MFA TOKEN FOR : {} ", user.getEmail());
+                if (verifyPassword(tokenRequest.password(), user.getPassword())) {
 
-                UsernamePasswordAuthenticationToken authenticatedToken = new UsernamePasswordAuthenticationToken(
-                        user, user.getPassword(), Collections.singleton(new SimpleGrantedAuthority("pre-auth")));
-                authenticatedToken.setDetails(user);
-                SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
-                try {
-                    return mfaToken(oauthClient, user, null, null);
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
+                    UsernamePasswordAuthenticationToken authenticatedToken = new UsernamePasswordAuthenticationToken(
+                            user, user.getPassword(), Collections.singleton(new SimpleGrantedAuthority("pre-auth")));
+                    authenticatedToken.setDetails(user);
+                    SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
+                    try {
+                        return mfaToken(oauthClientDetails, user, null, null);
+                    } catch (Exception e) {
+                        log.error(e.getMessage(), e);
+                    }
                 }
             }
+        } else {
+            return new Token(null, null, null, null, 0,
+                    null, null, false, null,
+                    null, null, TokenError.builder()
+                    .error(UnsuccessfulResponse.unauthorized_client)
+                    .errorDescription("Unauthorized")
+                    .errorUri("")
+                    .build());
         }
+
         return mfaToken(null, null, null, TokenError.builder()
+                .error(UnsuccessfulResponse.invalid_request)
+                .errorDescription("user not found")
                 .build());
     }
 
@@ -317,7 +337,7 @@ public class TokenService {
                             true,
                             null, null, null, null
                     );
-                } catch (JOSEException e) {
+                } catch (Exception e) {
                     log.error(e.getMessage(), e);
                 }
             }

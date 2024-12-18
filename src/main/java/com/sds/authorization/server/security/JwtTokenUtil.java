@@ -213,7 +213,8 @@ public class JwtTokenUtil {
                 }};
             }
         } catch (Exception e) {
-            log.error("Invalid token: {}", e.getMessage());
+
+            log.error("Invalid token: {}", e.getMessage(), e);
         }
         return new LinkedHashMap<String, String>() {{
             put("status", "invalid");

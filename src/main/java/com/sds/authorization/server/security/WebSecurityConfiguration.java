@@ -79,7 +79,6 @@ public class WebSecurityConfiguration implements WebMvcConfigurer {
                 .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(authorizationManagerRequestMatcherRegistry ->
                         authorizationManagerRequestMatcherRegistry
-
                                 .requestMatchers(
                                         "/api/v1/client-resource/login",
                                         "/login/**",
@@ -134,7 +133,6 @@ public class WebSecurityConfiguration implements WebMvcConfigurer {
         } else {
             sessionCreationPolicy = SessionCreationPolicy.IF_REQUIRED; // Allow Session creation
         }
-
         return sessionCreationPolicy;
     }
 
