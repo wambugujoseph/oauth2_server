@@ -398,7 +398,6 @@ public class TokenService {
 
             if (oauthClientDetails.isPresent() && userOptional.isPresent() &&
                     verifyPassword(loginRequest.password(), userOptional.get().getPassword())) {
-
                 //Confirm redirect URL
                 User user = userOptional.get();
                 String tokenCode = tokenCode();
