@@ -1,6 +1,5 @@
 package com.sds.authorization.server.controller;
 
-import com.sds.authorization.server.model.AuthorizationCodeChallenge;
 import com.sds.authorization.server.model.CustomResponse;
 import com.sds.authorization.server.model.TokenError;
 import com.sds.authorization.server.model.UnsuccessfulResponse;
@@ -10,7 +9,6 @@ import com.sds.authorization.server.model.token.TokenRequest;
 import com.sds.authorization.server.service.TokenService;
 import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.coyote.BadRequestException;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
@@ -35,6 +33,7 @@ public class TokenController {
 
     @PostMapping(value = "/api/v1/oauth/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public ResponseEntity<Object> getAuthToken(@RequestParam Map<String, String> tokenRequest) {
+        log.info("Request {}", tokenRequest);
         try {
             Token token = tokenService.tokenGeneratorHandler(
                     new TokenRequest(
@@ -48,7 +47,8 @@ public class TokenController {
                             tokenRequest.getOrDefault("mfa_token", ""),
                             tokenRequest.getOrDefault("mfa_code", ""),
                             tokenRequest.getOrDefault("code_verifier", ""),
-                            tokenRequest.getOrDefault("code", "")
+                            tokenRequest.getOrDefault("code", ""),
+                            tokenRequest.getOrDefault("redirect_uri", "")
                     )
             );
 
@@ -57,15 +57,11 @@ public class TokenController {
                     return ResponseEntity.badRequest().body(token.error());
                 } else if (token.mfaToken() == null && token.accessToken() == null) {
                     HttpHeaders httpHeaders = new HttpHeaders();
-                    httpHeaders.setLocation(URI.create(token.redirectUri() + "#code=" + token.code() + "&code_challenge=" + token.codeChallenge()));
+                    httpHeaders.setLocation(URI.create(token.redirectUri() + "?code=" + token.code() + "&code_challenge=" + token.codeChallenge()));
                     return ResponseEntity.status(302).headers(httpHeaders).build();
 
-                } else if (token.verified()) {
-                    return ResponseEntity.ok(token);
                 } else {
-                    HttpHeaders httpHeaders = new HttpHeaders();
-                    httpHeaders.add("Location", "/client/sds-core/api/v1/specialist/" + tokenRequest.get("username"));
-                    return new ResponseEntity<>(token, httpHeaders, HttpStatus.OK);
+                    return ResponseEntity.ok(token);
                 }
             }
         } catch (Exception e) {
@@ -90,9 +86,14 @@ public class TokenController {
                     authorizeRequest.get("username"),
                     authorizeRequest.get("password")
             );
-            log.info("Request {}", SdsObjMapper.jsonString(clientLoginRequest));
+            log.info("Request {}", authorizeRequest);
+
             Token token = tokenService.processAuthorizationRequest(clientLoginRequest);
-            return ResponseEntity.ok(token);
+            if (token.error() != null) {
+                return ResponseEntity.badRequest().body(token.error());
+            } else {
+                return ResponseEntity.ok(token);
+            }
 
         } catch (Exception e) {
             log.info(e.getMessage(), e);

@@ -6,7 +6,6 @@ import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.sds.authorization.server.model.OauthClientDetails;
-import com.sds.authorization.server.model.Role;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.service.NotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +22,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
@@ -88,12 +86,11 @@ public class JwtTokenUtil {
                 .expirationTime(exp) // expires in 10 minutes
                 .notBeforeTime(now)
                 .issueTime(now)
-                .claim("roles", user.isKycVerified() ? user.getRoles().stream().map(Role::getName).collect(Collectors.toList()) : "NOT-VERIFIED")
+                .claim("roles", user.getRole().getName())
                 .claim("typ", "access_token")
                 .claim("name", user.getUsername())
                 .claim("email", user.getEmail())
                 .claim("userid", user.getUserId())
-                .claim("verified", user.isKycVerified())
                 .claim("client_id", clientID)
                 .jwtID(UUID.randomUUID().toString())
                 .build();
@@ -146,9 +143,9 @@ public class JwtTokenUtil {
                     username = authentication.getPrincipal().toString();
                 }
 
-                String msg = "Your BridgeUI OTP code is: <b>" + code + "</b>. It will be active for the next 02:00 minutes.";
+                String msg = "Your login OTP code is: <b>" + code + "</b>. It will be active for the next 02:00 minutes.";
                 notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", msg,
-                        "BRIDGE OTP",
+                        "ONE TIME PASSWORD",
                         List.of(userEmail).toArray(new String[0])
                 );
 

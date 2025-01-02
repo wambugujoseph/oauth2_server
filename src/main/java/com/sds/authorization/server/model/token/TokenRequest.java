@@ -31,6 +31,8 @@ public record TokenRequest(
         @JsonProperty(value = "code_verifier", defaultValue = "")
         String codeVerifier,
         @JsonProperty(value = "code", defaultValue = "")
-        String code
+        String code,
+        @JsonProperty(value = "redirect_uri", defaultValue = "")
+        String redirectUri
 ) {
 }

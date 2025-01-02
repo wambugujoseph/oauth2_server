@@ -7,7 +7,7 @@ import java.util.Objects;
 
 
 @Entity
-@Table(name = "oauth_client_details")
+@Table(name = "client_details")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

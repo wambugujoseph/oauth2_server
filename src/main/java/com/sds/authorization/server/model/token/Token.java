@@ -29,7 +29,6 @@ public record Token(
         long expireIn,
         List<String> roles,
         String scope,
-        boolean verified,
         String code,
         String codeChallenge,
         String redirectUri,

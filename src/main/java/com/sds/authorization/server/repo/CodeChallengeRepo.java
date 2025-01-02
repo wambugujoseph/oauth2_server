@@ -13,6 +13,9 @@ import java.util.List;
 
 public interface CodeChallengeRepo extends JpaRepository<AuthorizationCodeChallenge, String> {
 
-    List<AuthorizationCodeChallenge>  findAllByCode(String code);
-    List<AuthorizationCodeChallenge>  findAllByCodeAndClientId(String code, String clientID);
+    List<AuthorizationCodeChallenge> findAllByCode(String code);
+
+    List<AuthorizationCodeChallenge> findAllByCodeAndClientId(String code, String clientID);
+
+    List<AuthorizationCodeChallenge> findAllByCodeChallengeAndClientId(String codeChallenge, String clientID);
 }

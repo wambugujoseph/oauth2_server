@@ -1,12 +1,12 @@
 package com.sds.authorization.server.controller;
 
 import com.sds.authorization.server.dto.ClientCreateDto;
+import com.sds.authorization.server.model.CustomResponse;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.service.ClientService;
+import com.sds.authorization.server.service.UriValidator;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
 
 /**
  * @author Joseph Kibe
@@ -25,7 +25,19 @@ public class ClientRestController {
 
     @PostMapping(value = "/api/v1/register/client", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Object> createUser(@RequestBody ClientCreateDto clientCreateDto){
+    public ResponseEntity<Object> createUser(@RequestBody ClientCreateDto clientCreateDto) {
+
+
+        String redirectUrlError = UriValidator.isRedirectUriValid(clientCreateDto.webServerRedirectUri());
+        if (redirectUrlError != null) {
+            return ResponseEntity.badRequest().body(
+                    CustomResponse.builder()
+                            .responseCode("400")
+                            .responseDesc(redirectUrlError)
+                            .build()
+            );
+        }
+
         OauthClientDetails clientDetails = clientService.createOauthClientDetails(clientCreateDto);
         return ResponseEntity.ok(clientDetails);
     }

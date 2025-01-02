@@ -10,12 +10,10 @@ import com.sds.authorization.server.security.RSAKeyGenerator;
 import com.sds.authorization.server.service.NotificationService;
 import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.aspectj.weaver.patterns.IToken;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.util.Assert;
 
 import java.util.List;
 import java.util.Optional;
@@ -36,9 +34,9 @@ class AuthorizationServiceApplicationTests {
 
     @Test
     void testFetchUser(){
-      Optional<User> userOptional = userRepo.findByEmailOrUsername("jose@gmail.com", "jose@gmail.com");
+      Optional<User> userOptional = userRepo.findByEmail("jose@gmail.com");
         Assertions.assertFalse(userOptional.isEmpty());
-        log.info(" -----> {} {}",userOptional.get().getRoles(),new SdsObjMapper<>(userOptional.get(), JsonNode.class).get().asText());
+        log.info(" -----> {} {}",userOptional.get().getRole(),new SdsObjMapper<>(userOptional.get(), JsonNode.class).get().asText());
     }
 
     @Test

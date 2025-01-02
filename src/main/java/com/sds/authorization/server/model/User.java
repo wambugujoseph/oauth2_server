@@ -27,53 +27,60 @@ import java.util.Objects;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "auth_user")
+@Table(name = "users")
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @Column(name = "username")
+    @Transient
     private String username;
+
     @Column(name = "user_id", unique = true)
     private String userId;
+
     @Column(name = "password")
     private String password;
+
     @Column(name = "email", unique = true)
     private String email;
-    @Column(name = "phoneNumber", unique = true)
+
+    @Column(name = "msisdn", unique = true)
     private String phoneNumber;
-    @Column(name = "enabled")
-    private boolean enabled;
-    @Column(name = "accountNonExpired")
-    private boolean accountNonExpired;
-    @Column(name = "credentialsNonExpired")
-    private boolean credentialsNonExpired;
-    @Column(name = "accountNonLocked")
-    private boolean accountNonLocked;
-    @Column(name = "is_kyc_verified")
-    private boolean isKycVerified;
+
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "partner_name")
+    private String partnerName;
+
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "role_name")
+    private String roleName;
+
+    @Column(name = "company_name")
+    private String companyName;
+
+    @Column(name = "company_id")
+    private String companyId;
+
+    @Column(name = "reset_password")
+    private boolean resetPassword;
+
+    @Column(name="failed_login_attempt")
+    private int failedLoginAttempt;
+
+    @Column(name = "role_id", insertable = false, updatable = false)
+    private long roleId;
 
 
-    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
-    @JoinTable(name = "role_user", joinColumns = {@JoinColumn(name = "user_id", referencedColumnName = "id")},
-            inverseJoinColumns = {
-                    @JoinColumn(name = "role_id", referencedColumnName = "id")})
-    private List<Role> roles;
+    @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+    @JoinColumn(name = "role_id", referencedColumnName = "id")
+    private Role role;
 
-    @Override
-    public final boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
-        if (thisEffectiveClass != oEffectiveClass) return false;
-        User user = (User) o;
-        return getId() != null && Objects.equals(getId(), user.getId());
-    }
-
-    @Override
-    public final int hashCode() {
-        return this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() : getClass().hashCode();
-    }
 }

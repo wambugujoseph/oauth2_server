@@ -16,6 +16,8 @@ public record AppProps(
         String emailPassword,
         boolean isAppLive,
         String pubKey,
-        String pvtKey
+        String pvtKey,
+        String brokerKey,
+        String env
 ) {
 }

@@ -16,9 +16,9 @@ public class AuthUserDetail extends User implements UserDetails {
 
         List<GrantedAuthority> grantedAuthorities = new ArrayList<>();
 
-        getRoles().forEach(role -> {
-            grantedAuthorities.add(new SimpleGrantedAuthority(role.getName()));
-            role.getPermissions().forEach(permission -> grantedAuthorities.add(new SimpleGrantedAuthority(permission.getName())));
+        List.of(getRole()).forEach(role -> {
+            grantedAuthorities.add(new SimpleGrantedAuthority(getRole().getName()));
+            role.getPermissions().forEach(permission -> grantedAuthorities.add(new SimpleGrantedAuthority(permission.getPermissionName())));
 
         });
         return grantedAuthorities;

@@ -46,4 +46,6 @@ public class AuthorizationCodeChallenge {
     private long codeExpireAt;
     @Column(name = "is_code_used")
     private boolean isCodeUsed;
+    @Column(name="is_otp_verified")
+    private boolean isOtpVerified;
 }

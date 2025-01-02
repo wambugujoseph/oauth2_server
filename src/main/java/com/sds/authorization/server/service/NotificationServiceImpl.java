@@ -3,20 +3,20 @@ package com.sds.authorization.server.service;
 
 import com.google.common.cache.Cache;
 import com.sds.authorization.server.configuration.AppProps;
+import com.sds.authorization.server.io.kafka.KafkaEventStream;
+import com.sds.authorization.server.model.message_broker.MessageBrokerSchema;
+import com.sds.authorization.server.security.CheckSumValidator;
 import com.sds.authorization.server.utility.InMemCache;
-import jakarta.mail.Authenticator;
-import jakarta.mail.PasswordAuthentication;
-import jakarta.mail.Session;
-import jakarta.mail.Transport;
-import jakarta.mail.internet.InternetAddress;
-import jakarta.mail.internet.MimeMessage;
+import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.Properties;
-import java.util.concurrent.CompletableFuture;
+import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * @author joseph.kibe
@@ -29,79 +29,73 @@ public class NotificationServiceImpl implements NotificationService {
 
     private final Cache<String, Object> cache;
     private final AppProps config;
+    private final KafkaEventStream kafkaEventStream;
 
-    public NotificationServiceImpl(AppProps props) {
+    public NotificationServiceImpl(AppProps props, KafkaEventStream kafkaEventStream) {
         this.config = props;
+        this.kafkaEventStream = kafkaEventStream;
         this.cache = new InMemCache().getNotificationCache();
     }
 
     @Override
     public void sendSmsNotification(String id, String body, String subject, String[] recipient) {
 
+        try {
+            MessageBrokerSchema brokerSchema = MessageBrokerSchema.builder()
+                    .notificationRef(UUID.nameUUIDFromBytes(("GLOBAL-SMS" + id + LocalDateTime.now().getHour()).getBytes(StandardCharsets.UTF_8)).toString())
+                    .clientId("SWITCHLINK")
+                    .notificationChannel("SMS")
+                    .count(1)
+                    .delay(0)
+                    .contentType(MediaType.TEXT_PLAIN_VALUE)
+                    .data(MessageBrokerSchema.SMS.builder()
+                            .recipients(Arrays.stream(recipient).toList())
+                            .message(body)
+                            .build())
+                    .metadata(MessageBrokerSchema.Metadata.builder()
+                            .origin("GLOBAL-API")
+                            .timestamp(Timestamp.valueOf(LocalDateTime.now()).toString())
+                            .build())
+                    .build();
+            String dataJsonStr = SdsObjMapper.jsonString(brokerSchema);
+            String signature = new CheckSumValidator().getMacSha256Signature(dataJsonStr, config.brokerKey());
+            brokerSchema.setSignature(signature);
+            kafkaEventStream.publishEvent("PUSH-NOTIFICATION", SdsObjMapper.jsonString(brokerSchema));
+        } catch (final Exception e) {
+            log.error(e.getMessage(), e);// exception to catch the errors
+            log.error("Sms Sending Failed"); // failed
+        }
     }
 
     @Override
     public void sendEmailNotification(String id, String body, String subject, String[] recipient) {
-
+        body = String.format(EmailTemplate, "", body);
         try {
-                /*
-                Prevent repeated sending of email by checking whether the notification id is in cache
-                Until the notification is expired in the cache based on the set time notification of the said id won't be sent
-                */
-
-            if (cache.getIfPresent(id) != null) {
-                return;
-            }
-
-            body = String.format(EmailTemplate, "", body);
-            cache.put(id, body); // Prevent sending the same for the next set expiry time
-            final Session newSession = Session.getInstance(this.Mail_Properties(), new Authenticator() {
-                @Override
-                protected PasswordAuthentication getPasswordAuthentication() {
-                    return new PasswordAuthentication(config.emailUsername(), config.emailPassword());
-                }
-            });
-
-            MimeMessage EmailMessage = new MimeMessage(newSession);
-            MimeMessageHelper emailMessage = new MimeMessageHelper(EmailMessage);
-
-            try {
-                emailMessage.setTo(recipient);
-                emailMessage.setFrom(new InternetAddress(config.emailUsername()));
-                emailMessage.setSubject(subject); // email subject
-                emailMessage.setText(body, true); // The content of email
-                emailMessage.setSentDate(new Date());
-                // Transport the email
-                CompletableFuture<String> emailSending = CompletableFuture.supplyAsync(() -> {
-                    try {
-                        Transport.send(EmailMessage);
-                        return "Your Email has been sent successfully!";
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
-                        return "Error sending email " + e.getMessage();
-                    }
-                });
-                emailSending.thenAccept(log::info);
-
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            }
-
-        } catch (final Exception e) { // exception to catch the errors
+            MessageBrokerSchema brokerSchema = MessageBrokerSchema.builder()
+                    .notificationRef(UUID.nameUUIDFromBytes(("AUTH-SERVER-EMAIL" + id + LocalDateTime.now().getHour()).getBytes(StandardCharsets.UTF_8)).toString())
+                    .clientId("SWITCHLINK")
+                    .notificationChannel("EMAIL")
+                    .count(1)
+                    .delay(0)
+                    .contentType(MediaType.TEXT_HTML_VALUE)
+                    .data(MessageBrokerSchema.Email.builder()
+                            .subject(subject)
+                            .recipients(Arrays.stream(recipient).toList())
+                            .body(body)
+                            .build())
+                    .metadata(MessageBrokerSchema.Metadata.builder()
+                            .origin("AUTH-SERVER")
+                            .timestamp(Timestamp.valueOf(LocalDateTime.now()).toString())
+                            .build())
+                    .build();
+            String dataJsonStr = SdsObjMapper.jsonString(brokerSchema);
+            String signature = new CheckSumValidator().getMacSha256Signature(dataJsonStr, config.brokerKey());
+            brokerSchema.setSignature(signature);
+            kafkaEventStream.publishEvent("PUSH-NOTIFICATION", SdsObjMapper.jsonString(brokerSchema));
+        } catch (final Exception e) {
+            log.error(e.getMessage(), e);// exception to catch the errors
             log.error("Email Sending Failed"); // failed
         }
-    }
-
-    private Properties Mail_Properties() {
-        final Properties Mail_Prop = new Properties();
-
-        Mail_Prop.put("mail.smtp.host", config.smtpHost());
-        Mail_Prop.put("mail.smtp.port", config.smtpPort());
-        Mail_Prop.put("mail.smtp.auth", true);
-        Mail_Prop.put("mail.smtp.starttls.enable", true);
-        Mail_Prop.put("mail.smtp.ssl.protocols", "TLSv1.2");
-
-        return Mail_Prop;
     }
 
     public static String EmailTemplate = """
