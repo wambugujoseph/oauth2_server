@@ -7,7 +7,6 @@ import com.sds.authorization.server.model.token.ClientLoginRequest;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
 import com.sds.authorization.server.service.TokenService;
-import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -32,6 +31,7 @@ public class TokenController {
     }
 
     @PostMapping(value = "/api/v1/oauth/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    @CrossOrigin
     public ResponseEntity<Object> getAuthToken(@RequestParam Map<String, String> tokenRequest) {
         log.info("Request {}", tokenRequest);
         try {
@@ -58,7 +58,9 @@ public class TokenController {
                 } else if (token.mfaToken() == null && token.accessToken() == null) {
                     HttpHeaders httpHeaders = new HttpHeaders();
                     httpHeaders.setLocation(URI.create(token.redirectUri() + "?code=" + token.code() + "&code_challenge=" + token.codeChallenge()));
-                    return ResponseEntity.status(302).headers(httpHeaders).build();
+                    ResponseEntity<Object> response = ResponseEntity.status(302).headers(httpHeaders).build();
+                    log.info("Response Header {}", response);
+                    return response;
 
                 } else {
                     return ResponseEntity.ok(token);
@@ -73,6 +75,7 @@ public class TokenController {
     }
 
     @PostMapping(value = "/api/v1/oauth/authorize", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @CrossOrigin
     public ResponseEntity<Object> loginClient(@RequestParam Map<String, String> authorizeRequest) {
 
         try {
@@ -106,6 +109,7 @@ public class TokenController {
     }
 
     @GetMapping(value = "/api/v1/tokeninfo", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @CrossOrigin
     public ResponseEntity<Object> tokenInfo(@RequestParam("access_token") String accessToken) {
 
         try {

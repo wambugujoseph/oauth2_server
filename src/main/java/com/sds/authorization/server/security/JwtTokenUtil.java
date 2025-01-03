@@ -151,7 +151,7 @@ public class JwtTokenUtil {
 
                 LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
                 Date now = Date.from(current.toInstant(ZoneOffset.UTC));
-                Date expire = Date.from(current.plusSeconds(120).toInstant(ZoneOffset.UTC));
+                Date expire = Date.from(current.plusSeconds(1000).toInstant(ZoneOffset.UTC));
                 String keyId = "test";
 
                 List<GrantedAuthority> authorities = new ArrayList<>();

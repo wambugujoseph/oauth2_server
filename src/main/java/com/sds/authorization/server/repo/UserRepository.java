@@ -50,4 +50,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     void recordUserFailedLoginAttempt(@Param("email") String email);
 
 
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE users
+            SET
+            password=:new_pass,
+            last_failed_login_time = CURRENT_TIMESTAMP
+            WHERE
+            email=:email
+            """, nativeQuery = true)
+    void updateUserPassword(@Param("email") String email, @Param("new_pass") String hashedPassword);
+
+
 }

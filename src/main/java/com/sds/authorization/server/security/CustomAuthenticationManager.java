@@ -33,7 +33,7 @@ public class CustomAuthenticationManager implements AuthenticationProvider {
     public CustomAuthenticationManager(OauthClientRepository clientRepository) {
         this.clientRepository = clientRepository;
         this.bCryptPasswordEncoder = new BCryptPasswordEncoder(
-                BCryptPasswordEncoder.BCryptVersion.$2A, 10, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8)));
+                BCryptPasswordEncoder.BCryptVersion.$2A, 11, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8)));
     }
 
     @Override
