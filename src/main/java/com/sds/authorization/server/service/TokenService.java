@@ -183,7 +183,12 @@ public class TokenService {
                         }
                     }
                 } else {
-                    errorMsg = SdsObjMapper.jsonString(object);
+
+                    if (object instanceof LinkedHashMap<?, ?> obj) {
+                        errorMsg = obj.get("error_description").toString();
+                    } else {
+                        errorMsg = "Invalid Access token";
+                    }
                 }
             } else {
                 User user = userService.getActiveUserByEmail(tokenRequest.username());
@@ -215,7 +220,7 @@ public class TokenService {
         try {
             if (error != null) {
                 return new Token(null, null, null, null, 0,
-                        null, null, null,null, null, error);
+                        null, null, null, null, null, error);
             }
 
             String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), "test");
@@ -436,7 +441,7 @@ public class TokenService {
                         .build();
 
                 //Prevent replay of the login challenge
-                if (!codeChallengeRepo.findAllByCodeChallengeAndClientId(loginRequest.codeChallenge(), loginRequest.clientId()).isEmpty()){
+                if (!codeChallengeRepo.findAllByCodeChallengeAndClientId(loginRequest.codeChallenge(), loginRequest.clientId()).isEmpty()) {
                     return mfaToken(null, null, null, TokenError.builder()
                             .error(UnsuccessfulResponse.invalid_request)
                             .errorDescription("Request blocked, Expired code challenge")

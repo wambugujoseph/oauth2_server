@@ -40,7 +40,7 @@ public class UserService {
     private final NotificationService emailNotificationService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
-    public UserService(UserRepository userRepository, NotificationService emailNotificationService, BCryptPasswordEncoder bCryptPasswordEncoder) {
+    public UserService(UserRepository userRepository, NotificationService emailNotificationService) {
         this.userRepository = userRepository;
         this.emailNotificationService = emailNotificationService;
         this.bCryptPasswordEncoder = new BCryptPasswordEncoder(
