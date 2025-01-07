@@ -54,6 +54,9 @@ public class User {
     @Column(name = "partner_name")
     private String partnerName;
 
+    @Column(name = "name")
+    private String name;
+
     @Column(name = "first_name")
     private String firstName;
 

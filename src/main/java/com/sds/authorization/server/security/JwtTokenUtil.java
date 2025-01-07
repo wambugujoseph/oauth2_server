@@ -6,6 +6,7 @@ import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.sds.authorization.server.model.OauthClientDetails;
+import com.sds.authorization.server.model.Permission;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.service.NotificationService;
 import lombok.extern.slf4j.Slf4j;
@@ -79,6 +80,11 @@ public class JwtTokenUtil {
         Date now = Date.from(current.toInstant(ZoneOffset.UTC));
         Date exp = Date.from(current.plusSeconds(oauthClientDetails.getAccessTokenValidity()).toInstant(ZoneOffset.UTC));
 
+        List<Permission> permissions = user.getRole().getPermissions();
+
+        List<String> authorities = new ArrayList<>();
+        permissions.forEach(permission -> authorities.add(permission.getPermissionName()));
+
         JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
                 .issuer(UUID.randomUUID().toString())
                 .subject("SDS-APP")
@@ -87,10 +93,13 @@ public class JwtTokenUtil {
                 .notBeforeTime(now)
                 .issueTime(now)
                 .claim("roles", user.getRole().getName())
+                .claim("usp", authorities)
                 .claim("typ", "access_token")
-                .claim("name", user.getUsername())
+                .claim("name", user.getName())
                 .claim("email", user.getEmail())
                 .claim("userid", user.getUserId())
+                .claim("id", user.getId()+"")
+                .claim("usercompid", user.getCompanyId())
                 .claim("client_id", clientID)
                 .jwtID(UUID.randomUUID().toString())
                 .build();
@@ -115,6 +124,9 @@ public class JwtTokenUtil {
                 .claim("typ", "refresh")
                 .claim("uid", user.getUsername())
                 .claim("email", user.getEmail())
+                .claim("name", user.getName())
+                .claim("id", user.getId()+"")
+                .claim("usercompid", user.getCompanyId())
                 .claim("client_id", clientId)
                 .jwtID(UUID.randomUUID().toString())
                 .build();
@@ -133,12 +145,15 @@ public class JwtTokenUtil {
                 String userEmail = "";
                 String username;
                 String userCompId = "";
+                String name = "";
                 String id = "";
 
                 if (authentication.getPrincipal() instanceof User authUserDetail) {
                     userEmail = authUserDetail.getEmail();
                     username = authUserDetail.getUsername();
-                    id = authUserDetail.getUserId();
+                    userCompId = authUserDetail.getCompanyId();
+                    name = authUserDetail.getName();
+                    id = authUserDetail.getId()+"";
                 } else {
                     username = authentication.getPrincipal().toString();
                 }
@@ -167,6 +182,7 @@ public class JwtTokenUtil {
                         .claim("id", id)
                         .claim("usp", authorities)//User Permission
                         .claim("usercompid", userCompId)
+                        .claim("name", name)
                         .claim("code", code)
                         .claim("token_code", tokenCode)
                         .claim("email", userEmail)

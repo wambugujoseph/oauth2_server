@@ -51,7 +51,8 @@ public class CustomerOncePerRequestFilter extends OncePerRequestFilter {
         final String authHeader = Optional.ofNullable(request.getHeader(HttpHeaders.AUTHORIZATION)).orElse("NONE");
 
         if (authHeader.startsWith("Bearer")) {
-            String token = authHeader.replace("Bearer", "").trim();
+            String token = authHeader.replace("Bearer ", "").trim();
+            log.info("Token: {}", token);
             Object object = jwtTokenUti.verifyToken(token);
 
             if (object instanceof EncryptedJWT jwt) {
