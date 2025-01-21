@@ -100,6 +100,21 @@ public class RSAKeyGenerator {
         return "";
     }
 
+    public static String urlDecryptWithAES(String password, String encryptedBase64Data) {
+        try {
+            SecretKey key = getSecretKey(password);
+            Cipher cipher = Cipher.getInstance(AES);
+            cipher.init(Cipher.DECRYPT_MODE, key, generateIv());
+            byte[] decryptedByte = cipher.doFinal(Base64.getUrlDecoder().decode(encryptedBase64Data));
+
+            return new String(decryptedByte);
+        } catch (Exception e) {
+            log.warn("Failed To Decrypt Key: " + e.getMessage());
+        }
+
+        return "";
+    }
+
     private static SecretKey getSecretKey(String password) throws NoSuchAlgorithmException, InvalidKeySpecException {
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
         byte[] salt = new byte[16];
@@ -132,6 +147,21 @@ public class RSAKeyGenerator {
 
             byte[] cipherByte = cipher.doFinal(data);
             return Base64.getEncoder().encodeToString(cipherByte);
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
+        return "";
+    }
+
+    public static String urlEncryptWithAES(String password, byte[] data) {
+        try {
+            SecretKey key = getSecretKey(password);
+            Cipher cipher = Cipher.getInstance(AES);
+            cipher.init(Cipher.ENCRYPT_MODE, key, generateIv());
+
+            byte[] cipherByte = cipher.doFinal(data);
+            return Base64.getUrlEncoder().encodeToString(cipherByte);
         } catch (Exception e) {
             log.error(e.getMessage());
         }

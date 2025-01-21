@@ -88,7 +88,8 @@ public class WebSecurityConfiguration implements WebMvcConfigurer {
                                         "/api/v1/oauth/authorize",
                                         "/api/v1/update/user",
                                         "/api/v1/register/user",
-                                        "/api/v1/register/client"
+                                        "/api/v1/register/client",
+                                        "/api/v1/password_reset/**"
                                 )
                                 .permitAll()
                                 .anyRequest()

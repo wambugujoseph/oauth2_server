@@ -147,3 +147,37 @@ CREATE TABLE public.authorization_code_challenge(
 
     CONSTRAINT CODE_CHALLENGE_PK PRIMARY KEY(code_challenge_id)
 )
+
+-- public.password_resets definition
+
+-- Drop table
+
+-- DROP TABLE public.password_resets;
+
+CREATE TABLE public.password_resets (
+	email varchar(255) NOT NULL,
+	secure_token varchar NOT NULL,
+	created_at timestamp(0) NULL,
+	expire_at timestamp NOT NULL,
+);
+CREATE INDEX password_resets_email_index ON public.password_resets USING btree (email);
+
+CREATE TABLE public.ui9_pass_resets (
+	id  int serial  NOT NULL,
+	user_id int4 NOT NULL,
+    reset_token varchar(255) NOT NULL,
+    responseType varchar(255) NOT NULL,
+    clientId varchar(255) NOT NULL,
+    redirectUrl varchar(255) NOT NULL,
+    state varchar(255) NOT NULL,
+    code_challenge varchar(255) NOT NULL,
+    code_challenge_method varchar(255) NOT NULL,
+	used_state int2 DEFAULT '0'::smallint NOT NULL,
+	password varchar(255),
+	created_at timestamp(0) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at timestamp(0) NULL,
+	client_name timestamp(0)
+	CONSTRAINT ui9_pass_resets_pkey PRIMARY KEY (id)
+);
+CREATE INDEX ui9_pass_resets_user_id_index ON public.ui9_pass_resets USING btree (user_id);
+CREATE INDEX ui9_pass_resets_user_id_index ON public.ui9_pass_resets USING btree (reset_token);

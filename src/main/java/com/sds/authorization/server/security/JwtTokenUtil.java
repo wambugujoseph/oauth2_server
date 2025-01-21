@@ -24,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+import static com.sds.authorization.server.service.NotificationServiceImpl.EmailTemplate;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 /**
@@ -136,11 +137,9 @@ public class JwtTokenUtil {
         return jwt.serialize();
     }
 
-
     public String generateMfaToken(Authentication authentication, String jwtId, String clientId, String code, String tokenCode) {
 
         try {
-
             if (authentication.isAuthenticated()) {
                 String userEmail = "";
                 String username;
@@ -159,7 +158,8 @@ public class JwtTokenUtil {
                 }
 
                 String msg = "Your login OTP code is: <b>" + code + "</b>. It will be active for the next 02:00 minutes.";
-                notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", msg,
+                String body = String.format(EmailTemplate, "", msg);
+                notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", body,
                         "ONE TIME PASSWORD",
                         List.of(userEmail).toArray(new String[0])
                 );

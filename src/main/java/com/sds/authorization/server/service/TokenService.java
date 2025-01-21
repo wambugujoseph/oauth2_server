@@ -12,7 +12,6 @@ import com.sds.authorization.server.repo.CodeChallengeRepo;
 import com.sds.authorization.server.repo.OauthClientRepository;
 import com.sds.authorization.server.security.JwtTokenUtil;
 import com.sds.authorization.server.security.LoginCtrlService;
-import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.coyote.BadRequestException;

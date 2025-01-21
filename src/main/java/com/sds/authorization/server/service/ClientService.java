@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Date;
+import java.util.Optional;
 import java.util.Random;
 
 /**
@@ -23,8 +24,9 @@ import java.util.Random;
 @Slf4j
 public class ClientService {
 
-    private final OauthClientRepository oauthClientRepository;
+
     private final Random random;
+    private OauthClientRepository oauthClientRepository;
 
     public ClientService(OauthClientRepository oauthClientRepository) {
         this.oauthClientRepository = oauthClientRepository;
@@ -64,5 +66,9 @@ public class ClientService {
             log.error(e.getMessage(), e);
             return null;
         }
+    }
+
+    public OauthClientDetails getOauthClientDetails(String clientId){
+        return oauthClientRepository.findById(clientId).orElse(null);
     }
 }

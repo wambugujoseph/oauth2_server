@@ -1,5 +1,6 @@
 package com.sds.authorization.server.configuration;
 
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
@@ -18,6 +19,8 @@ public record AppProps(
         String pubKey,
         String pvtKey,
         String brokerKey,
-        String env
+        String env,
+        String baseUrl,
+        String cipher
 ) {
 }

@@ -6,5 +6,8 @@ package com.sds.authorization.server.dto;
  * Created On 03/01/2025 08:57
  **/
 
-public record ChangePasswordRequest(String oldPass, String newPass) {
+public record ChangePasswordRequest(String passwordResetToken,
+                                    String newPass,
+                                    String confirmPass
+                                    ) {
 }

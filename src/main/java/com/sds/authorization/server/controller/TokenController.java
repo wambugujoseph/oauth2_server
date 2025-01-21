@@ -60,7 +60,7 @@ public class TokenController {
                 } else if (token.mfaToken() == null && token.accessToken() == null) {
                     HttpHeaders httpHeaders = new HttpHeaders();
                     httpHeaders.setLocation(URI.create(token.redirectUri() + "?code=" + token.code() + "&code_challenge=" + token.codeChallenge()+ "&state=" + state));
-                    ResponseEntity<Object> response = ResponseEntity.status(302).headers(httpHeaders).build();
+                    ResponseEntity<Object> response = ResponseEntity.status(301).headers(httpHeaders).build();
                     log.info("Response Header {}", response);
                     return response;
 
@@ -122,4 +122,5 @@ public class TokenController {
                     .responseDesc("UnAuthorized"));
         }
     }
+
 }

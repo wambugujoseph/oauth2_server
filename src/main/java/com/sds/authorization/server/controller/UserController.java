@@ -1,12 +1,17 @@
 package com.sds.authorization.server.controller;
 
 import com.sds.authorization.server.dto.ChangePasswordRequest;
+import com.sds.authorization.server.dto.PasswordResetRequest;
 import com.sds.authorization.server.dto.UserCreatedDto;
 import com.sds.authorization.server.model.CustomResponse;
+import com.sds.authorization.server.model.PasswordReset;
 import com.sds.authorization.server.model.UnsuccessfulResponse;
+import com.sds.authorization.server.service.PasswordResetService;
 import com.sds.authorization.server.service.UserService;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.regex.Pattern;
@@ -22,9 +27,11 @@ import java.util.regex.Pattern;
 public class UserController {
 
     private final UserService userService;
+    private final PasswordResetService resetService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, PasswordResetService resetService) {
         this.userService = userService;
+        this.resetService = resetService;
     }
 
     @PostMapping(value = "/api/v1/register/user", consumes = MediaType.APPLICATION_JSON_VALUE,
@@ -45,13 +52,37 @@ public class UserController {
 
     }
 
-    @PutMapping(value = "/api/v1/password", consumes = MediaType.APPLICATION_JSON_VALUE,
+
+    @PostMapping(value = "/api/v1/password_reset", consumes = MediaType.APPLICATION_JSON_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @CrossOrigin
-    public ResponseEntity<Object> updateUserPassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+    public ResponseEntity<Object> updateUserPassword(@RequestBody PasswordResetRequest passwordReset) {
 
-        if (changePasswordRequest.newPass() != null && changePasswordRequest.oldPass() != null) {
-            CustomResponse response = userService.changePassword(changePasswordRequest);
+        if (passwordReset !=null) {
+            CustomResponse response = resetService.initiatePasswordReset(passwordReset);
+
+            if (response.getError() == null) {
+                return ResponseEntity.ok(response);
+            }else {
+                return ResponseEntity.badRequest().body(response);
+            }
+        }
+        return ResponseEntity.badRequest().body(CustomResponse.builder().error(UnsuccessfulResponse.invalid_request)
+                .errorDescription("Null password not allowed"));
+    }
+
+    @PutMapping(value = "/api/v1/password_reset", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    @CrossOrigin
+    public ResponseEntity<Object> updateUserPassword(@RequestBody MultiValueMap<String, String> passwordReset) {
+
+        if (passwordReset !=null) {
+            ChangePasswordRequest changePasswordRequest = new ChangePasswordRequest(
+                    passwordReset.getFirst("resetToken"),
+                    passwordReset.getFirst("newPassword"),
+                    passwordReset.getFirst("confirmPassword")
+            );
+            CustomResponse response = resetService.resetPassword(changePasswordRequest);
 
             if (response.getError() == null) {
                 return ResponseEntity.ok(response);

@@ -50,6 +50,8 @@ app:
   env: ${APP_ENV:TEST}
   name: AUTH-SERVER
   description: AUTH SERVER
+  base_url: http://localhost:18010
+  cipher: ${APP_ENV_CIPHER:test}
   version: 1.0.0
   broker_key: ${API_ENV_BROKER_KEY:test}
   broker_encrypt_key: ${API_ENV_BROKER_ENCRYPT_KEY:test}
