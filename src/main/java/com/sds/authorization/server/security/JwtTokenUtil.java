@@ -5,6 +5,7 @@ import com.nimbusds.jose.crypto.RSADecrypter;
 import com.nimbusds.jose.crypto.RSAEncrypter;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
+import com.sds.authorization.server.configuration.AppProps;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.Permission;
 import com.sds.authorization.server.model.User;
@@ -39,10 +40,12 @@ public class JwtTokenUtil {
 
     private final KeyStore keyStore;
     private final NotificationService notificationService;
+    private final AppProps props;
 
-    public JwtTokenUtil(KeyStore keyStore, NotificationService notificationService) {
+    public JwtTokenUtil(KeyStore keyStore, NotificationService notificationService, AppProps props) {
         this.keyStore = keyStore;
         this.notificationService = notificationService;
+        this.props = props;
     }
 
     private static EncryptedJWT getEncryptedJWT(String keyId, JWTClaimsSet jwtClaims) {
@@ -83,12 +86,12 @@ public class JwtTokenUtil {
 
         List<Permission> permissions = user.getRole().getPermissions();
 
-        List<String> authorities = new ArrayList<>();
-        permissions.forEach(permission -> authorities.add(permission.getPermissionName()));
+        List<GrantedAuthority> authorities = new ArrayList<>();
+        permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission.getId()+"")));
 
         JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
                 .issuer(UUID.randomUUID().toString())
-                .subject("SDS-APP")
+                .subject("APIUSER")
                 .audience(UUID.randomUUID().toString())
                 .expirationTime(exp) // expires in 10 minutes
                 .notBeforeTime(now)
@@ -102,10 +105,11 @@ public class JwtTokenUtil {
                 .claim("id", user.getId()+"")
                 .claim("usercompid", user.getCompanyId())
                 .claim("client_id", clientID)
+                .claim("resetpass", user.isResetPassword())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
-        EncryptedJWT jwt = getEncryptedJWT("test", jwtClaims);
+        EncryptedJWT jwt = getEncryptedJWT(props.keyId(), jwtClaims);
         jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
         return jwt.serialize();
     }
@@ -117,7 +121,7 @@ public class JwtTokenUtil {
 
         JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
                 .issuer(UUID.randomUUID().toString())
-                .subject("SDS-APP")
+                .subject("APIUSER")
                 .audience(UUID.randomUUID().toString())
                 .expirationTime(exp) // expires in 10 minutes
                 .notBeforeTime(now)
@@ -129,10 +133,11 @@ public class JwtTokenUtil {
                 .claim("id", user.getId()+"")
                 .claim("usercompid", user.getCompanyId())
                 .claim("client_id", clientId)
+                .claim("resetpass", user.isResetPassword())
                 .jwtID(UUID.randomUUID().toString())
                 .build();
 
-        EncryptedJWT jwt = getEncryptedJWT("test", jwtClaims);
+        EncryptedJWT jwt = getEncryptedJWT(keyId, jwtClaims);
         jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
         return jwt.serialize();
     }
@@ -167,7 +172,6 @@ public class JwtTokenUtil {
                 LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
                 Date now = Date.from(current.toInstant(ZoneOffset.UTC));
                 Date expire = Date.from(current.plusSeconds(1000).toInstant(ZoneOffset.UTC));
-                String keyId = "test";
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 authorities.add(new SimpleGrantedAuthority("pre-auth"));
@@ -187,11 +191,12 @@ public class JwtTokenUtil {
                         .claim("token_code", tokenCode)
                         .claim("email", userEmail)
                         .claim("client_id", clientId)
+                        .claim("resetpass", false)
                         .jwtID(jwtId)
                         .build();
 
-                EncryptedJWT jwt = getEncryptedJWT(keyId, jwtClaims);
-                jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(keyId)));
+                EncryptedJWT jwt = getEncryptedJWT(props.keyId(), jwtClaims);
+                jwt.encrypt(new RSAEncrypter((RSAPublicKey) keyStore.getPublicKey(props.keyId())));
 
                 return jwt.serialize();
             }

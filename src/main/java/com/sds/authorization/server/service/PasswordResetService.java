@@ -122,7 +122,7 @@ public class PasswordResetService {
 
     public CustomResponse resetPassword(ChangePasswordRequest request) {
 
-        String regExpn = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{10,20}$";
+        String regExpn = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$";
         Pattern pattern = Pattern.compile(regExpn, Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(request.newPass());
         String decryptedResetToken = RSAKeyGenerator.urlDecryptWithAES(props.cipher(),request.passwordResetToken());
@@ -138,6 +138,7 @@ public class PasswordResetService {
                         return CustomResponse.builder()
                                 .responseCode("200")
                                 .responseDesc("Password was successfully updated")
+                                .data(passwordResets.getFirst().getRedirectUrl())
                                 .build();
 
                     } else {

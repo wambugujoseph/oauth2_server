@@ -222,8 +222,8 @@ public class TokenService {
                         null, null, null, null, null, error);
             }
 
-            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), "test");
-            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), "test");
+            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), props.keyId());
+            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), props.keyId());
             if (tokenCode != null) {
 
                 List<AuthorizationCodeChallenge> codeChallenges = codeChallengeRepo.findAllByCodeAndClientId(tokenCode, oauthClient.getClientId());
@@ -256,6 +256,7 @@ public class TokenService {
                 );
             }
         } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return new Token(null, null, null, null, 0,
                     null, null, null,
                     null, null, TokenError.builder()
@@ -272,32 +273,39 @@ public class TokenService {
         if (authentication.isAuthenticated() && authentication.getPrincipal() instanceof OauthClientDetails oauthClientDetails) {
             if (user != null) {
                 log.info("GENERATING MFA TOKEN FOR : {} ", user.getEmail());
-                if (verifyPassword(tokenRequest.password(), user.getPassword())) {
+                if (!user.isApiAccess()) {
+                    if (verifyPassword(tokenRequest.password(), user.getPassword())) {
 
-                    UsernamePasswordAuthenticationToken authenticatedToken = new UsernamePasswordAuthenticationToken(
-                            user, user.getPassword(), Collections.singleton(new SimpleGrantedAuthority("pre-auth")));
-                    authenticatedToken.setDetails(user);
-                    SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
-                    try {
-                        Token token = mfaToken(oauthClientDetails, user, null, null);
+                        UsernamePasswordAuthenticationToken authenticatedToken = new UsernamePasswordAuthenticationToken(
+                                user, user.getPassword(), Collections.singleton(new SimpleGrantedAuthority("pre-auth")));
+                        authenticatedToken.setDetails(user);
+                        SecurityContextHolder.getContext().setAuthentication(authenticatedToken);
+                        try {
+                            Token token = mfaToken(oauthClientDetails, user, null, null);
 
-                        return new Token(
-                                token.mfaToken(),
-                                token.accessToken(),
-                                token.refreshToken(),
-                                token.tokenType(),
-                                token.expireIn(),
-                                null,
-                                null,
-                                null,
-                                null,
-                                null,
-                                token.error());
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
+                            return new Token(
+                                    token.mfaToken(),
+                                    token.accessToken(),
+                                    token.refreshToken(),
+                                    token.tokenType(),
+                                    token.expireIn(),
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    null,
+                                    token.error());
+                        } catch (Exception e) {
+                            log.error(e.getMessage(), e);
+                        }
+                    } else {
+                        loginCtrlService.userBruteForceAttackPrevention(user.getEmail());
                     }
                 } else {
-                    loginCtrlService.userBruteForceAttackPrevention(user.getEmail());
+                    // FOR NONE MFA
+                    if (tokenRequest.password().equals(user.getApiPassword())) {
+                        return getToken(user, oauthClientDetails, null, null);
+                    }
                 }
             }
         } else {

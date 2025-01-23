@@ -12,7 +12,6 @@ public record PasswordResetRequest(String userId,
                                    String redirectUrl,
                                    String state,
                                    String codeChallenge,
-                                   String codeChallengeMethod,
-                                   String product
+                                   String codeChallengeMethod
 ) {
 }

@@ -18,6 +18,7 @@ public record AppProps(
         boolean isAppLive,
         String pubKey,
         String pvtKey,
+        String keyId,
         String brokerKey,
         String env,
         String baseUrl,

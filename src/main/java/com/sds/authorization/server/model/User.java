@@ -81,6 +81,11 @@ public class User {
     @Column(name = "role_id", insertable = false, updatable = false)
     private long roleId;
 
+    @Column(name = "api_access")
+    private boolean isApiAccess;
+
+    @Column(name = "api_password")
+    private String apiPassword;
 
     @OneToOne(fetch = FetchType.EAGER, cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinColumn(name = "role_id", referencedColumnName = "id")

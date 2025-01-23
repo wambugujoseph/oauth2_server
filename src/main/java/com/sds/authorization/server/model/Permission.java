@@ -19,7 +19,7 @@ import java.util.List;
  */
 
 @Entity
-@Table(name = "ui9_permission")
+@Table(name = "ui9_permissions")
 @Getter
 @Setter
 @ToString
@@ -61,7 +61,7 @@ public class Permission implements Serializable {
     @Column(name = "updated_by")
     private String updatedBy;
 
-    @ManyToMany(mappedBy = "permissions")
+    @ManyToMany(mappedBy = "permissions", fetch = FetchType.EAGER)
     private List<Role> roles;
 
 }

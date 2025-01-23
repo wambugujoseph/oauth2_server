@@ -50,11 +50,12 @@ app:
   env: ${APP_ENV:TEST}
   name: AUTH-SERVER
   description: AUTH SERVER
-  base_url: http://localhost:18010
+  base_url: ${ENV_BASE_URL:http://localhost:3309}
   cipher: ${APP_ENV_CIPHER:test}
   version: 1.0.0
   broker_key: ${API_ENV_BROKER_KEY:test}
   broker_encrypt_key: ${API_ENV_BROKER_ENCRYPT_KEY:test}
+  key_id: ${API_ENV_KEY_ID:oeNZv6lIPU4g}
   smtp_host: ${APP_E_SMTP_HOST:smtp.office365.com}
   smtp_port: ${APP_E_SMTP_PORT:587}
   email_username: ${APP_E_USERNAME:alerts@switchlinkafrica.co.ke}
