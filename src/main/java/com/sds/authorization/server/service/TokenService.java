@@ -320,10 +320,10 @@ public class TokenService {
     }
 
     private Token mfaToken() {
-        User user = userService.getActiveUserByEmail(tokenRequest.username());
+        User user = userService.getUserByEmail(tokenRequest.username());
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication.isAuthenticated() && authentication.getPrincipal() instanceof OauthClientDetails oauthClientDetails) {
-            if (user != null) {
+            if (user != null && user.getStatus().equalsIgnoreCase("ACTIVE")) {
                 log.info("GENERATING MFA TOKEN FOR : {} ", user.getEmail());
                 if (!user.isApiAccess()) {
                     if (verifyPassword(tokenRequest.password(), user.getPassword())) {
@@ -357,6 +357,17 @@ public class TokenService {
                     // FOR NONE MFA
                     if (tokenRequest.password().equals(user.getApiPassword())) {
                         return getToken(user, oauthClientDetails, null, null);
+                    }else{
+                        loginCtrlService.userBruteForceAttackPrevention(user.getEmail());
+                    }
+                }
+            }else {
+                if (user != null) {
+                    if (!user.getStatus().equalsIgnoreCase("ACTIVE")) {
+                        return mfaToken(null, null, null, TokenError.builder()
+                                .error(UnsuccessfulResponse.unauthorized_client)
+                                .errorDescription("Account locked or inactive")
+                                .build());
                     }
                 }
             }
@@ -466,10 +477,10 @@ public class TokenService {
 
     public Token processAuthorizationRequest(ClientLoginRequest loginRequest) {
         try {
-            User user = userService.getActiveUserByEmail(loginRequest.username());
+            User user = userService.getUserByEmail(loginRequest.username());
             Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(loginRequest.clientId());
 
-            if (oauthClientDetails.isPresent() && user != null &&
+            if (oauthClientDetails.isPresent() && user != null && user.getStatus().equalsIgnoreCase("ACTIVE") &&
                     verifyPassword(loginRequest.password(), user.getPassword())) {
                 //Confirm redirect URL
 
@@ -537,6 +548,18 @@ public class TokenService {
                 }
 
             } else {
+
+                if (user != null) {
+
+                    if (!user.getStatus().equalsIgnoreCase("ACTIVE")) {
+                        return mfaToken(null, null, null, TokenError.builder()
+                                .error(UnsuccessfulResponse.unauthorized_client)
+                                .errorDescription("Account locked or inactive")
+                                .build());
+                    } else {
+                        loginCtrlService.userBruteForceAttackPrevention(user.getEmail());
+                    }
+                }
                 return mfaToken(null, null, null, TokenError.builder()
                         .error(UnsuccessfulResponse.unauthorized_client)
                         .errorDescription("Invalid username or password")
@@ -575,22 +598,22 @@ public class TokenService {
         }
     }
 
-    public CustomResponse isUserAccessTokenValid(String tokenId){
+    public CustomResponse isUserAccessTokenValid(String tokenId) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        if (authentication.isAuthenticated() && tokenId != null){
-            if (tokenIdRepository.findByTokenIdAndStatus(tokenId, "ACTIVE").isPresent()){
+        if (authentication.isAuthenticated() && tokenId != null) {
+            if (tokenIdRepository.findByTokenIdAndStatus(tokenId, "ACTIVE").isPresent()) {
                 return CustomResponse.builder()
                         .responseCode("200")
                         .responseDesc("Token is Valid")
                         .build();
-            }else {
+            } else {
                 return CustomResponse.builder()
                         .responseCode("400")
                         .responseDesc("Toke is InValid")
                         .build();
             }
-        }else {
+        } else {
             return CustomResponse.builder()
                     .error(UnsuccessfulResponse.unauthorized_client)
                     .errorDescription("Unauthorized client invalidation request")
