@@ -22,7 +22,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
-@Table(name = "ui9_pass_reset")
+@Table(name = "password_reset")
 public class PasswordReset {
     @Id
     @GeneratedValue(strategy =GenerationType.TABLE )

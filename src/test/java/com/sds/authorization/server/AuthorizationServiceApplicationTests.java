@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sds.authorization.server.model.OauthClientDetails;
 import com.sds.authorization.server.model.User;
 import com.sds.authorization.server.repo.UserRepository;
+import com.sds.authorization.server.repo.UserTokenIdRepository;
 import com.sds.authorization.server.security.RSAKeyGenerator;
 import com.sds.authorization.server.service.NotificationService;
 import com.sds.authorization.server.utility.SdsObjMapper;
@@ -27,9 +28,16 @@ class AuthorizationServiceApplicationTests {
 
     @Autowired
     private NotificationService notificationService;
+    @Autowired
+    private UserTokenIdRepository userTokenIdRepository;
 
     @Test
     void contextLoads() {
+    }
+
+    @Test
+    void updatingUserToken(){
+        userTokenIdRepository.updateUserTokenIdStatus("xx", "LL", "iii");
     }
 
     @Test

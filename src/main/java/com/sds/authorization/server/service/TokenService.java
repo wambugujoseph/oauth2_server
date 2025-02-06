@@ -1,17 +1,21 @@
 package com.sds.authorization.server.service;
 
-import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jwt.EncryptedJWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.sds.authorization.server.configuration.AppProps;
+import com.sds.authorization.server.dto.InvalidateUserTokenRequest;
 import com.sds.authorization.server.model.*;
+import com.sds.authorization.server.model.message_broker.MessageBrokerSchema;
 import com.sds.authorization.server.model.token.ClientLoginRequest;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
 import com.sds.authorization.server.repo.CodeChallengeRepo;
 import com.sds.authorization.server.repo.OauthClientRepository;
+import com.sds.authorization.server.repo.UserTokenIdRepository;
 import com.sds.authorization.server.security.JwtTokenUtil;
 import com.sds.authorization.server.security.LoginCtrlService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.coyote.BadRequestException;
@@ -23,12 +27,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import ua_parser.Client;
+import ua_parser.Parser;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -52,14 +59,16 @@ public class TokenService {
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final LoginCtrlService loginCtrlService;
     private final AppProps props;
+    private final UserTokenIdRepository tokenIdRepository;
 
-    public TokenService(UserService userService, CodeChallengeRepo codeChallengeRepo, JwtTokenUtil jwtTokenUtil, OauthClientRepository oauthClientRepository, LoginCtrlService loginCtrlService, AppProps props) {
+    public TokenService(UserService userService, CodeChallengeRepo codeChallengeRepo, JwtTokenUtil jwtTokenUtil, OauthClientRepository oauthClientRepository, LoginCtrlService loginCtrlService, AppProps props, UserTokenIdRepository tokenIdRepository) {
         this.userService = userService;
         this.codeChallengeRepo = codeChallengeRepo;
         this.oauthClientRepository = oauthClientRepository;
         this.jwtTokenUtil = jwtTokenUtil;
         this.loginCtrlService = loginCtrlService;
         this.props = props;
+        this.tokenIdRepository = tokenIdRepository;
         this.bCryptPasswordEncoder = new BCryptPasswordEncoder(
                 BCryptPasswordEncoder.BCryptVersion.$2A, 10, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8)));
 
@@ -222,8 +231,6 @@ public class TokenService {
                         null, null, null, null, null, error);
             }
 
-            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), props.keyId());
-            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), props.keyId());
             if (tokenCode != null) {
 
                 List<AuthorizationCodeChallenge> codeChallenges = codeChallengeRepo.findAllByCodeAndClientId(tokenCode, oauthClient.getClientId());
@@ -244,6 +251,13 @@ public class TokenService {
                         null
                 );
             } else {
+                String tokenID = UUID.nameUUIDFromBytes((user.getEmail() + ":" + Date.from(Instant.now()).getTime()).getBytes(StandardCharsets.UTF_8)).toString();
+
+                String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), props.keyId(), tokenID);
+                String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), props.keyId(), tokenID);
+
+                //Save the generated token
+                saveTheToken(user, oauthClient, tokenID);
                 return new Token(
                         null,
                         token,
@@ -265,6 +279,44 @@ public class TokenService {
                     .errorUri("")
                     .build());
         }
+    }
+
+    @Transactional
+    private void saveTheToken(User user, OauthClientDetails oauthClient, String tokenId) {
+        HttpServletRequest servletRequest = this.tokenRequest.servletRequest();
+        Map<String, String> clientInfo = new HashMap<>();
+        try {
+            String remoteAddr = servletRequest.getRemoteAddr();
+            String remoteHost = servletRequest.getRemoteHost();
+            String contentType = servletRequest.getHeader("content-type");
+            String userAgent = servletRequest.getHeader("user-agent");
+            Parser uaParser = new Parser();
+            Client client = uaParser.parse(userAgent);
+
+            clientInfo.put("os_family", client.os.family);
+            clientInfo.put("device_family", client.device.family);
+            clientInfo.put("userAgent_family", client.userAgent.family);
+            clientInfo.put("remote_address", remoteAddr);
+            clientInfo.put("remote_host", remoteHost);
+            clientInfo.put("remote_user", oauthClient.getApplicationName());
+            clientInfo.put("content_type", contentType);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+
+        UserTokenId userTokenId = UserTokenId.builder()
+                .userEmail(user.getEmail())
+                .loggedInDevice(clientInfo.toString())
+                .loggedInDeviceCount(0)
+                .loggedInApp(oauthClient.getApplicationName())
+                .tokenId(tokenId)
+                .createdAt(Timestamp.valueOf(LocalDateTime.now()))
+                .expireAt(Timestamp.valueOf(LocalDateTime.now().plusSeconds(oauthClient.getRefreshTokenValidity())))
+                .status("ACTIVE")
+                .build();
+        this.tokenIdRepository.updateUserTokenIdStatusByEmailAndLoggedInApp("LOGGED-OUT", user.getEmail(),
+                oauthClient.getApplicationName());
+        this.tokenIdRepository.save(userTokenId);
     }
 
     private Token mfaToken() {
@@ -352,13 +404,16 @@ public class TokenService {
             OauthClientDetails oauthClient = oauthClientDetails.get();
             if (verifyPassword(tokenRequest.clientSecret(), oauthClient.getClientSecret())) {
                 try {
+                    String tokenID = UUID.nameUUIDFromBytes((oauthClient.getClientId() + ":" + Date.from(Instant.now()).getTime()).getBytes(StandardCharsets.UTF_8)).toString();
                     String token = jwtTokenUtil.generateAccessToken(
                             User.builder()
                                     .role(null)
                                     .build(),
                             oauthClient,
                             oauthClient.getClientId(),
-                            "test");
+                            props.keyId(),
+                            tokenID
+                    );
                     return new Token(
                             null,
                             token,
@@ -379,9 +434,10 @@ public class TokenService {
 
     private Token refreshToken() {
         try {
+
             EncryptedJWT jwt = jwtTokenUtil.decodeToken(tokenRequest.refreshToken());
 
-            if (jwt.getJWTClaimsSet().getStringClaim("typ").equals("refresh")) {
+            if (jwt != null && jwt.getJWTClaimsSet().getStringClaim("typ").equals("refresh")) {
                 String userID = jwt.getJWTClaimsSet().getStringClaim("email");
                 String clientId = jwt.getJWTClaimsSet().getStringClaim("client_id");
                 User user = userService.getActiveUserByEmail(userID);
@@ -394,19 +450,8 @@ public class TokenService {
                     String clientID = tokenRequest.clientId();
                     if ((clientID.isBlank() & clientSecret.isBlank()) || verifyPassword(clientID, clientSecret)) {
                         try {
-                            String token = jwtTokenUtil.generateAccessToken(user, oauthClient, oauthClient.getClientId(), "test");
-                            String refresh = jwtTokenUtil.generateRefreshToken(user, oauthClient, oauthClient.getClientId(), "test");
-                            return new Token(
-                                    null,
-                                    token,
-                                    refresh,
-                                    "Bearer",
-                                    oauthClient.getAccessTokenValidity(),
-                                    new ArrayList<>(),
-                                    "read,write",
-                                    null, null, null, null
-                            );
-                        } catch (JOSEException e) {
+                            return getToken(user, oauthClient, null, null);
+                        } catch (Exception e) {
                             log.error(e.getMessage(), e);
                         }
                     }
@@ -419,7 +464,7 @@ public class TokenService {
         return null;
     }
 
-    public Token processAuthorizationRequest(ClientLoginRequest loginRequest) throws BadRequestException {
+    public Token processAuthorizationRequest(ClientLoginRequest loginRequest) {
         try {
             User user = userService.getActiveUserByEmail(loginRequest.username());
             Optional<OauthClientDetails> oauthClientDetails = oauthClientRepository.findById(loginRequest.clientId());
@@ -504,6 +549,54 @@ public class TokenService {
                 .error(UnsuccessfulResponse.server_error)
                 .errorDescription("Failed to Authorize user")
                 .build());
+    }
+
+    public CustomResponse invalidateUserAccessToken(InvalidateUserTokenRequest invalidateUserTokenRequest) {
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication.isAuthenticated() && invalidateUserTokenRequest != null) {
+
+            if (invalidateUserTokenRequest.isFullInvalidation()) {
+                tokenIdRepository.updateUserTokenIdStatus("LOGGED-OUT", invalidateUserTokenRequest.getEmail());
+            } else {
+                tokenIdRepository.updateUserTokenIdStatus("LOGGED-OUT", invalidateUserTokenRequest.getTokenId(),
+                        invalidateUserTokenRequest.getEmail());
+            }
+            return CustomResponse.builder()
+                    .responseCode("200")
+                    .responseDesc("User logged out successfully")
+                    .build();
+        } else {
+            return CustomResponse.builder()
+                    .error(UnsuccessfulResponse.unauthorized_client)
+                    .errorDescription("Unauthorized client invalidation request")
+                    .build();
+        }
+    }
+
+    public CustomResponse isUserAccessTokenValid(String tokenId){
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication.isAuthenticated() && tokenId != null){
+            if (tokenIdRepository.findByTokenIdAndStatus(tokenId, "ACTIVE").isPresent()){
+                return CustomResponse.builder()
+                        .responseCode("200")
+                        .responseDesc("Token is Valid")
+                        .build();
+            }else {
+                return CustomResponse.builder()
+                        .responseCode("400")
+                        .responseDesc("Toke is InValid")
+                        .build();
+            }
+        }else {
+            return CustomResponse.builder()
+                    .error(UnsuccessfulResponse.unauthorized_client)
+                    .errorDescription("Unauthorized client invalidation request")
+                    .build();
+        }
+
     }
 
     public Object getTokenInfo(String token) {

@@ -1,5 +1,6 @@
 package com.sds.authorization.server.controller;
 
+import com.sds.authorization.server.dto.InvalidateUserTokenRequest;
 import com.sds.authorization.server.model.CustomResponse;
 import com.sds.authorization.server.model.TokenError;
 import com.sds.authorization.server.model.UnsuccessfulResponse;
@@ -7,6 +8,7 @@ import com.sds.authorization.server.model.token.ClientLoginRequest;
 import com.sds.authorization.server.model.token.Token;
 import com.sds.authorization.server.model.token.TokenRequest;
 import com.sds.authorization.server.service.TokenService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -32,7 +34,7 @@ public class TokenController {
 
     @PostMapping(value = "/api/v1/oauth/token", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     @CrossOrigin
-    public ResponseEntity<Object> getAuthToken(@RequestParam Map<String, String> tokenRequest) {
+    public ResponseEntity<Object> getAuthToken(@RequestParam Map<String, String> tokenRequest, HttpServletRequest servletRequest) {
         log.info("Request {}", tokenRequest);
         try {
             String state = tokenRequest.get("state");
@@ -50,7 +52,8 @@ public class TokenController {
                             tokenRequest.getOrDefault("mfa_code", ""),
                             tokenRequest.getOrDefault("code_verifier", ""),
                             tokenRequest.getOrDefault("code", ""),
-                            tokenRequest.getOrDefault("redirect_uri", "")
+                            tokenRequest.getOrDefault("redirect_uri", ""),
+                            servletRequest
                     )
             );
 
@@ -108,6 +111,18 @@ public class TokenController {
                     .build());
         }
 
+    }
+
+    @PostMapping(value = "/api/v1/oauth/token/invalidate")
+    private ResponseEntity<Object> invalidateUser(@RequestBody InvalidateUserTokenRequest invalidateUserTokenRequest){
+        CustomResponse response = tokenService.invalidateUserAccessToken(invalidateUserTokenRequest);
+        return ResponseEntity.status(Integer.parseInt(response.getResponseCode())).body(response);
+    }
+
+    @PostMapping(value = "/api/v1/oauth/token/validate/{tokenId}")
+    private ResponseEntity<Object> checkIfUserTokenIsValid(@PathVariable String tokenId){
+        CustomResponse response = tokenService.isUserAccessTokenValid(tokenId);
+        return ResponseEntity.status(Integer.parseInt(response.getResponseCode())).body(response);
     }
 
     @GetMapping(value = "/api/v1/tokeninfo", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

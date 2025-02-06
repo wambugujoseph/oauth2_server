@@ -1,7 +1,9 @@
 package com.sds.authorization.server.model.token;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Joseph Kibe
@@ -33,6 +35,8 @@ public record TokenRequest(
         @JsonProperty(value = "code", defaultValue = "")
         String code,
         @JsonProperty(value = "redirect_uri", defaultValue = "")
-        String redirectUri
+        String redirectUri,
+        @JsonIgnore
+        HttpServletRequest servletRequest
 ) {
 }

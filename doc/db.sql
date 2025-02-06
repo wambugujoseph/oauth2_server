@@ -181,3 +181,18 @@ CREATE TABLE public.ui9_pass_resets (
 );
 CREATE INDEX ui9_pass_resets_user_id_index ON public.ui9_pass_resets USING btree (user_id);
 CREATE INDEX ui9_pass_resets_user_id_index ON public.ui9_pass_resets USING btree (reset_token);
+
+CREATE TABLE user_token_id(
+    user_email varchar(200) not null,
+    logged_in_device_count int not null,
+    logged_in_device not null,
+    logged_in_app varchar(50) not null,
+    token_id varchar(255),
+    created_at timestamp not null DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp DEFAULT CURRENT_TIMESTAMP,
+    expire_at timestamp null,
+    status varchar(20) not null DEFAULT 'LOGGED-OUT' ,
+
+    CONSTRAINT USER_TOKEN_ID_PK PRIMARY KEY(token_id)
+
+)

@@ -79,7 +79,7 @@ public class JwtTokenUtil {
         return new EncryptedJWT(header, jwtClaims);
     }
 
-    public String generateAccessToken(User user, OauthClientDetails oauthClientDetails, String clientID,String keyId) throws JOSEException {
+    public String generateAccessToken(User user, OauthClientDetails oauthClientDetails, String clientID, String keyId, String tokenId) throws JOSEException {
         LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
         Date now = Date.from(current.toInstant(ZoneOffset.UTC));
         Date exp = Date.from(current.plusSeconds(oauthClientDetails.getAccessTokenValidity()).toInstant(ZoneOffset.UTC));
@@ -87,7 +87,7 @@ public class JwtTokenUtil {
         List<Permission> permissions = user.getRole().getPermissions();
 
         List<GrantedAuthority> authorities = new ArrayList<>();
-        permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission.getId()+"")));
+        permissions.forEach(permission -> authorities.add(new SimpleGrantedAuthority(permission.getId() + "")));
 
         JWTClaimsSet jwtClaims = new JWTClaimsSet.Builder()
                 .issuer(UUID.randomUUID().toString())
@@ -97,16 +97,19 @@ public class JwtTokenUtil {
                 .notBeforeTime(now)
                 .issueTime(now)
                 .claim("roles", user.getRole().getName())
+                .claim("roleid", user.getRole().getId() + "")
                 .claim("usp", authorities)
                 .claim("typ", "access_token")
                 .claim("name", user.getName())
                 .claim("email", user.getEmail())
                 .claim("userid", user.getUserId())
-                .claim("id", user.getId()+"")
+                .claim("id", user.getId() + "")
                 .claim("usercompid", user.getCompanyId())
+                .claim("usercompname", user.getCompanyName())
                 .claim("client_id", clientID)
                 .claim("resetpass", user.isResetPassword())
-                .jwtID(UUID.randomUUID().toString())
+                .claim("partner", user.getPartnerName())
+                .jwtID(tokenId)
                 .build();
 
         EncryptedJWT jwt = getEncryptedJWT(props.keyId(), jwtClaims);
@@ -114,7 +117,7 @@ public class JwtTokenUtil {
         return jwt.serialize();
     }
 
-    public String generateRefreshToken(User user, OauthClientDetails oauthClientDetails, String clientId, String keyId) throws JOSEException {
+    public String generateRefreshToken(User user, OauthClientDetails oauthClientDetails, String clientId, String keyId, String tokenId) throws JOSEException {
         LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
         Date now = Date.from(current.toInstant(ZoneOffset.UTC));
         Date exp = Date.from(current.plusSeconds(oauthClientDetails.getRefreshTokenValidity()).toInstant(ZoneOffset.UTC));
@@ -130,11 +133,13 @@ public class JwtTokenUtil {
                 .claim("uid", user.getUsername())
                 .claim("email", user.getEmail())
                 .claim("name", user.getName())
-                .claim("id", user.getId()+"")
+                .claim("id", user.getId() + "")
                 .claim("usercompid", user.getCompanyId())
+                .claim("usercompname", user.getCompanyName())
                 .claim("client_id", clientId)
                 .claim("resetpass", user.isResetPassword())
-                .jwtID(UUID.randomUUID().toString())
+                .claim("partner", user.getPartnerName())
+                .jwtID(tokenId)
                 .build();
 
         EncryptedJWT jwt = getEncryptedJWT(keyId, jwtClaims);
@@ -157,7 +162,7 @@ public class JwtTokenUtil {
                     username = authUserDetail.getUsername();
                     userCompId = authUserDetail.getCompanyId();
                     name = authUserDetail.getName();
-                    id = authUserDetail.getId()+"";
+                    id = authUserDetail.getId() + "";
                 } else {
                     username = authentication.getPrincipal().toString();
                 }
@@ -171,7 +176,7 @@ public class JwtTokenUtil {
 
                 LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);
                 Date now = Date.from(current.toInstant(ZoneOffset.UTC));
-                Date expire = Date.from(current.plusSeconds(1000).toInstant(ZoneOffset.UTC));
+                Date expire = Date.from(current.plusSeconds(120).toInstant(ZoneOffset.UTC));
 
                 List<GrantedAuthority> authorities = new ArrayList<>();
                 authorities.add(new SimpleGrantedAuthority("pre-auth"));
@@ -192,6 +197,7 @@ public class JwtTokenUtil {
                         .claim("email", userEmail)
                         .claim("client_id", clientId)
                         .claim("resetpass", false)
+                        .claim("partner", "")
                         .jwtID(jwtId)
                         .build();
 
@@ -238,6 +244,12 @@ public class JwtTokenUtil {
         }};
     }
 
+    /**
+     * Jwt Token decoder
+     *
+     * @param token String to be decoded
+     * @return jwt if decoded successfully else NULL
+     */
     public EncryptedJWT decodeToken(String token) {
         try {
             //RSA/ECB/OAEPWithSHA-256AndMGF1Padding
