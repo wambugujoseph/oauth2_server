@@ -55,10 +55,12 @@ public class UserController {
     }
 
 
-    @PostMapping(value = "/api/v1/password_reset", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
+    @PostMapping(value = {"/api/v1/password_reset", "/api/v1/password_reset/{new}"},
+            consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE)
     @CrossOrigin
-    public ResponseEntity<Object> intiUserPasswordReset(@RequestBody MultiValueMap<String, String> passwordReset) {
+    public ResponseEntity<Object> intiUserPasswordReset(@PathVariable(value = "new", required = false) String newU,
+                                                        @RequestBody MultiValueMap<String, String> passwordReset) {
 
         if (passwordReset != null) {
             PasswordResetRequest request = new PasswordResetRequest(
@@ -70,7 +72,7 @@ public class UserController {
                     Optional.ofNullable(passwordReset.getFirst("code_challenge")).orElse(""),
                     Optional.ofNullable(passwordReset.getFirst("code_challenge_method")).orElse("")
             );
-            CustomResponse response = resetService.initiatePasswordReset(request);
+            CustomResponse response = resetService.initiatePasswordReset(request, (newU != null));
 
             if (response.getError() == null) {
                 return ResponseEntity.ok(response);

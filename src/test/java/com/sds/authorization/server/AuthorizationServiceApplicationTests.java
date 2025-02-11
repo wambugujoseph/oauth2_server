@@ -9,6 +9,7 @@ import com.sds.authorization.server.repo.UserRepository;
 import com.sds.authorization.server.repo.UserTokenIdRepository;
 import com.sds.authorization.server.security.RSAKeyGenerator;
 import com.sds.authorization.server.service.NotificationService;
+import com.sds.authorization.server.service.PasswordResetService;
 import com.sds.authorization.server.utility.SdsObjMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -31,6 +32,9 @@ class AuthorizationServiceApplicationTests {
     @Autowired
     private UserTokenIdRepository userTokenIdRepository;
 
+    @Autowired
+    PasswordResetService passwordResetService;
+
     @Test
     void contextLoads() {
     }
@@ -38,6 +42,11 @@ class AuthorizationServiceApplicationTests {
     @Test
     void updatingUserToken(){
         userTokenIdRepository.updateUserTokenIdStatus("xx", "LL", "iii");
+    }
+
+    @Test
+    void testPreventConsecutove() {
+        log.info("PASSOWRD RESET {}:", passwordResetService.isPasswordContaining("Joseph Kibe", "Joseph@2525"));
     }
 
     @Test

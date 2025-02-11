@@ -5,6 +5,7 @@ import com.sds.authorization.server.model.PasswordReset;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.sql.Timestamp;
 import java.util.List;
 
 /**
@@ -16,4 +17,7 @@ import java.util.List;
 public interface PasswordResetRepository extends JpaRepository<PasswordReset, Long> {
 
     List<PasswordReset> findAllByResetToken(String resetToken);
+
+    List<PasswordReset> findAllByResetTokenAndUsedStateAndCreatedAtGreaterThan(String resetToken, String usedState,
+                                                                               Timestamp timestamp);
 }

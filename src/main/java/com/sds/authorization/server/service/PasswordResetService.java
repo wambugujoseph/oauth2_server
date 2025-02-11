@@ -11,6 +11,7 @@ import com.sds.authorization.server.security.EncDecKey;
 import com.sds.authorization.server.security.PasswordGenerator;
 import com.sds.authorization.server.security.RSAKeyGenerator;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.common.protocol.types.Field;
 import org.postgresql.shaded.com.ongres.scram.client.ScramClient;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -58,7 +59,7 @@ public class PasswordResetService {
                 BCryptPasswordEncoder.BCryptVersion.$2A, 11, new SecureRandom("XXL".getBytes(StandardCharsets.UTF_8)));
     }
 
-    public CustomResponse initiatePasswordReset(PasswordResetRequest request) {
+    public CustomResponse initiatePasswordReset(PasswordResetRequest request, boolean isNewUser) {
         User user = userService.getUserByEmail(request.userId());
         OauthClientDetails oauthClientDetails = clientService.getOauthClientDetails(request.clientId());
 
@@ -83,6 +84,7 @@ public class PasswordResetService {
                 .codeChallenge(request.codeChallenge())
                 .codeChallengeMethod(request.codeChallengeMethod())
                 .password("")
+                .usedState("ACTIVE")
                 .createdAt(Timestamp.valueOf(LocalDateTime.now()))
                 .updatedAt(null)
                 .clientName(oauthClientDetails.getApplicationName())
@@ -91,7 +93,12 @@ public class PasswordResetService {
         passwordReset = repository.save(passwordReset);
 
         String url = props.baseUrl() + "/auth/reset-password?reset_token=" + encryptedResetToken;
-        pushResetEmail(oauthClientDetails.getApplicationName(), url, user.getEmail());
+
+        if (isNewUser) {
+            pushNewAccountPasswordReset(oauthClientDetails.getApplicationName(), url, user.getEmail());
+        } else {
+            pushResetEmail(oauthClientDetails.getApplicationName(), url, user.getEmail());
+        }
 
         return CustomResponse.builder()
                 .responseCode("200")
@@ -112,7 +119,7 @@ public class PasswordResetService {
     }
 
     private void pushNewAccountPasswordReset(String product, String link, String email) {
-        String msg = "<p>An account has been created on " + product + " account. Use the button below to reset it. <strong>This password reset is only valid for the next 2 hours.</strong></p";
+        String msg = "<p>An account has been created on the " + product + ". Use the button below to reset your password. <strong>This password reset is only valid for the next 2 hours.</strong></p";
         String body = String.format(PasswordResetEmailTemplate, "", msg, link);
         notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", body,
                 "PASSWORD RESET",
@@ -125,14 +132,18 @@ public class PasswordResetService {
         String regExpn = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,20}$";
         Pattern pattern = Pattern.compile(regExpn, Pattern.CASE_INSENSITIVE);
         Matcher matcher = pattern.matcher(request.newPass());
-        String decryptedResetToken = RSAKeyGenerator.urlDecryptWithAES(props.cipher(),request.passwordResetToken());
-        List<PasswordReset> passwordResets = repository.findAllByResetToken(decryptedResetToken);
+        String decryptedResetToken = RSAKeyGenerator.urlDecryptWithAES(props.cipher(), request.passwordResetToken());
+        List<PasswordReset> passwordResets = repository.findAllByResetTokenAndUsedStateAndCreatedAtGreaterThan(decryptedResetToken, "ACTIVE", Timestamp.valueOf(LocalDateTime.now().minusMinutes(5)));
 
         if (!passwordResets.isEmpty()) {
             User user = userService.getUserByEmail(passwordResets.getFirst().getUserId());
-            if (matcher.matches()) {
+            if (matcher.matches() && !hasConsecutiveSequence(request.passwordResetToken(), 3)
+                    && isPasswordContaining(user.getName(), request.newPass())) {
                 if (request.confirmPass().equalsIgnoreCase(request.newPass())) {
                     if (!bCryptPasswordEncoder.matches(request.newPass(), user.getPassword())) {
+                        PasswordReset passwordReset = passwordResets.getFirst();
+                        passwordReset.setUsedState("IN-ACTIVE");
+                        repository.save(passwordReset);
                         userRepository.updateUserPassword(user.getEmail(), bCryptPasswordEncoder.encode(request.newPass()));
                         //TODO push lock account notification in case the change was not initiate by the account owner
                         return CustomResponse.builder()
@@ -159,11 +170,51 @@ public class PasswordResetService {
                         .errorDescription("New password doest meet the password strength requirement")
                         .build();
             }
-        }else {
+        } else {
             return CustomResponse.builder()
                     .error(UnsuccessfulResponse.invalid_request)
                     .errorDescription("Reset token unavailable or expired")
                     .build();
         }
+    }
+
+    public boolean hasConsecutiveSequence(String password, int sequenceLength) {
+        if (password == null || password.length() < sequenceLength) {
+            return false;
+        }
+
+        for (int i = 0; i <= password.length() - sequenceLength; i++) {
+            boolean increasing = true;
+            boolean decreasing = true;
+
+            for (int j = 0; j < sequenceLength - 1; j++) {
+                char current = password.charAt(i + j);
+                char next = password.charAt(i + j + 1);
+
+                if (next != current + 1) {
+                    increasing = false;
+                }
+                if (next != current - 1) {
+                    decreasing = false;
+                }
+            }
+
+            if (increasing || decreasing) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isPasswordContaining(String userFullName, String password) {
+
+        String[] names = userFullName.split(" ");
+
+        for (String name : names) {
+            if (password.toLowerCase().contains(name.toLowerCase())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

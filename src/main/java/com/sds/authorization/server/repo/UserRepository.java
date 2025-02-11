@@ -56,7 +56,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
             UPDATE users
             SET
             password=:new_pass,
-            last_failed_login_time = CURRENT_TIMESTAMP
+            last_failed_login_time = CURRENT_TIMESTAMP,
+            reset_password='f'
             WHERE
             email=:email
             """, nativeQuery = true)

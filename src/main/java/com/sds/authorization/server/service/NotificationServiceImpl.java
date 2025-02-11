@@ -132,10 +132,6 @@ public class NotificationServiceImpl implements NotificationService {
                                             <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
                                                 <span>%s</span>
                                             </p>
-                                            <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt;">
-                                            <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">Kind Regards,<br
-                                                    aria-hidden="true">Switch-Bridge</span>
-                                            </p>
                                             <p style="margin-top:0; box-sizing:border-box; text-align: center;">
                                                         <span style="color: rgb(174, 174, 174); font-size:9pt; text-align: center;">
                                                            </span>
@@ -153,7 +149,7 @@ public class NotificationServiceImpl implements NotificationService {
                                                         <p align="center"
                                                            style="text-align:center;margin-top:0;box-sizing:border-box;line-height:18.0pt;">
                                                             <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">
-                                                            &copy;2024. All rights reserved.</span>
+                                                            &copy;2025. All rights reserved.</span>
                                                                <hr/>
                                                              CONFIDENTIALITY NOTICE: This message (and any attachment) is confidential and intended for the sole use of the individual or entity to which it 
                                                              is addressed. If you are not the intended recipient, you must not review, retransmit, convert to hard-copy, copy, use or disseminate this email or any of its attachments. If you received this email in error, please notify the sender immediately and delete it. This notice is automatically appended to all Internet email.
@@ -222,10 +218,6 @@ public class NotificationServiceImpl implements NotificationService {
                                     </tr>
                                     <tr>
                                         <td style="padding:26.25pt;box-sizing:border-box; color: rgb(61, 72, 82); border-width:1px">
-                                            <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt;">
-                                            <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">Kind Regards,<br
-                                                    aria-hidden="true">Switch-Bridge</span>
-                                            </p>
                                             <p style="margin-top:0; box-sizing:border-box; text-align: center;">
                                                         <span style="color: rgb(174, 174, 174); font-size:9pt; text-align: center;">
                                                            </span>
@@ -243,7 +235,7 @@ public class NotificationServiceImpl implements NotificationService {
                                                         <p align="center"
                                                            style="text-align:center;margin-top:0;box-sizing:border-box;line-height:18.0pt;">
                                                             <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">
-                                                            &copy;2024. All rights reserved.</span>
+                                                            &copy;2025. All rights reserved.</span>
                                                                <hr/>
                                                              CONFIDENTIALITY NOTICE: This message (and any attachment) is confidential and intended for the sole use of the individual or entity to which it 
                                                              is addressed. If you are not the intended recipient, you must not review, retransmit, convert to hard-copy, copy, use or disseminate this email or any of its attachments. If you received this email in error, please notify the sender immediately and delete it. This notice is automatically appended to all Internet email.
