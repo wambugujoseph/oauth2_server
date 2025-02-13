@@ -46,7 +46,7 @@ class AuthorizationServiceApplicationTests {
 
     @Test
     void testPreventConsecutove() {
-        log.info("PASSOWRD RESET {}:", passwordResetService.isPasswordContaining("Joseph Kibe", "Joseph@2525"));
+        log.info("PASSOWRD RESET {}:", passwordResetService.hasConsecutiveSequence( "James@299",3));
     }
 
     @Test

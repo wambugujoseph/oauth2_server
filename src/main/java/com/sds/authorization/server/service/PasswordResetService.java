@@ -7,14 +7,9 @@ import com.sds.authorization.server.dto.PasswordResetRequest;
 import com.sds.authorization.server.model.*;
 import com.sds.authorization.server.repo.PasswordResetRepository;
 import com.sds.authorization.server.repo.UserRepository;
-import com.sds.authorization.server.security.EncDecKey;
 import com.sds.authorization.server.security.PasswordGenerator;
 import com.sds.authorization.server.security.RSAKeyGenerator;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.common.protocol.types.Field;
-import org.postgresql.shaded.com.ongres.scram.client.ScramClient;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -138,7 +133,7 @@ public class PasswordResetService {
         if (!passwordResets.isEmpty()) {
             User user = userService.getUserByEmail(passwordResets.getFirst().getUserId());
             if (matcher.matches() && !hasConsecutiveSequence(request.passwordResetToken(), 3)
-                    && isPasswordContaining(user.getName(), request.newPass())) {
+                    && !isPasswordContaining(user.getName(), request.newPass())) {
                 if (request.confirmPass().equalsIgnoreCase(request.newPass())) {
                     if (!bCryptPasswordEncoder.matches(request.newPass(), user.getPassword())) {
                         PasswordReset passwordReset = passwordResets.getFirst();

@@ -7,6 +7,13 @@ spring:
         binder:
           brokers: ${API_ENV_KAFKA_SERVER:192.168.100.6:29092}
           defaultBrokerPort: 29092
+#          configuration:
+#            security:
+#              protocol: SASL_PLAINTEXT
+#            sasl:
+#              mechanism: SCRAM-SHA-256
+#              jaas:
+#                config: ${API_ENV_KAFKA_CRED:org.apache.kafka.common.security.scram.ScramLoginModule required username=admin password=admin-secret;}
   application:
     name: authorization
   datasource:
