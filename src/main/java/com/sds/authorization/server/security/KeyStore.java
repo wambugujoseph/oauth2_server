@@ -63,8 +63,8 @@ public class KeyStore {
         try {
             String pvtKeyStr = props.pvtKey();
             String pubKeyStr = props.pubKey();
-            PublicKey pubKey = RSAKeyGenerator.getPublicKey("test", pubKeyStr);
-            PrivateKey pvtKey = RSAKeyGenerator.getPrivateKey("test", pvtKeyStr);
+            PublicKey pubKey = RSAKeyGenerator.getPublicKey(props.cipher(), pubKeyStr);
+            PrivateKey pvtKey = RSAKeyGenerator.getPrivateKey(props.cipher(), pvtKeyStr);
             EncDecKey encDecKey = new EncDecKey();
             encDecKey.setKeyId(keyId);
             encDecKey.setPublicKey(pubKey);

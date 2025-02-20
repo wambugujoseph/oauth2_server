@@ -77,7 +77,7 @@ class AuthorizationServiceApplicationTests {
     @Test
     void email(){
         try {
-            notificationService.sendEmailNotification("--", "Test", "MYEMAIL", List.of("josewambugu25@gmail.com").toArray(new String[0]));
+            notificationService.sendEmailNotification("--", "Test", "MYEMAIL", List.of("josewambugu25@gmail.com").toArray(new String[0]),"1");
 
             Thread.sleep(10000);
         } catch (InterruptedException e) {

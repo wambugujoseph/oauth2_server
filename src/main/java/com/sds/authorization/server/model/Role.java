@@ -20,7 +20,6 @@ import java.util.List;
 @Table(name = "ui9_roles")
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @Builder
 @AllArgsConstructor

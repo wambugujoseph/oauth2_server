@@ -22,7 +22,6 @@ import java.util.List;
 @Table(name = "ui9_permissions")
 @Getter
 @Setter
-@ToString
 public class Permission implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

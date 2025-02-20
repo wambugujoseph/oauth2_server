@@ -38,12 +38,12 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendSmsNotification(String id, String body, String subject, String[] recipient) {
+    public void sendSmsNotification(String id, String body, String subject, String[] recipient, String clientId) {
 
         try {
             MessageBrokerSchema brokerSchema = MessageBrokerSchema.builder()
                     .notificationRef(UUID.nameUUIDFromBytes(("GLOBAL-SMS" + id + LocalDateTime.now().getHour()).getBytes(StandardCharsets.UTF_8)).toString())
-                    .clientId("SWITCHLINK")
+                    .clientId(getClientId(clientId))
                     .notificationChannel("SMS")
                     .count(1)
                     .delay(0)
@@ -68,11 +68,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public void sendEmailNotification(String id, String body, String subject, String[] recipient) {
+    public void sendEmailNotification(String id, String body, String subject, String[] recipient, String clientId) {
         try {
             MessageBrokerSchema brokerSchema = MessageBrokerSchema.builder()
                     .notificationRef(UUID.nameUUIDFromBytes(("AUTH-SERVER-EMAIL" + id + LocalDateTime.now().getHour()).getBytes(StandardCharsets.UTF_8)).toString())
-                    .clientId("SWITCHLINK")
+                    .clientId(getClientId(clientId))
                     .notificationChannel("EMAIL")
                     .count(1)
                     .delay(0)
@@ -97,166 +97,45 @@ public class NotificationServiceImpl implements NotificationService {
         }
     }
 
+    private String getClientId(String client) {
+
+        if (client != null){
+            if (client.equalsIgnoreCase("9") || client.equalsIgnoreCase("12")){
+                return "UPESI";
+            }
+        }
+
+        return "SWITCHLINK";
+    }
+
     public static String EmailTemplate = """
-            <div style="display:grid; justify-content: center;">
-                <div></div>
-                <table style="width:100%%;border-radius: 25px;">
-                    <tbody>
-                    <tr height="32" style="height:32px">
-                        <td></td>
-                    </tr>
-                    <tr align='center'>
-                        <td style="width:100%%;padding:0;border-style:solid none;border-top-width:1pt;border-bottom-width:1pt;border-top-color:#EDEFF2;border-bottom-color:#EDEFF2;box-sizing:border-box;">
-                            <div align="center">
-                                <table cellpadding="0" cellspacing="0"
-                                       style="background-color:white;width:500.5pt;box-sizing:border-box; border-color:#A0A0A0 #A0A0A0 #ffffff #A0A0A0; border-width:1px">
-                                    <tbody>
-                                    <tr style="background-color:#7c74cc;">
-                                        <td style="padding:18.75pt 0;">
-                                            <p align="center" style="font-size:11pt; text-align:center;margin:0;">
-                                        <span>
-                                            <a style="text-decoration:none" data-auth="NotApplicable" data-linkindex="3"
-                                               href="https://asgard.slafrica.net:9810/"
-                                               rel="noopener noreferrer" target="_blank">
-                                                <b><span style="color:#000000;font-size:16.5pt;">Switch-Bridge</span></b>
-                                            </a>
-                                        </span>
-                                            </p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding:26.25pt;box-sizing:border-box; color: rgb(61, 72, 82); border-width:1px">
-                                            <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
-                                                <span>Hi%s,</span>
-                                            </p>
-                                            <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
-                                                <span>%s</span>
-                                            </p>
-                                            <p style="margin-top:0; box-sizing:border-box; text-align: center;">
-                                                        <span style="color: rgb(174, 174, 174); font-size:9pt; text-align: center;">
-                                                           </span>
-                                            </p>
-                                        </td>
-                                    </tr>
-                                    <tr align='center'>
-                                        <td style="background-color:#cccccc; padding:0;box-sizing:border-box;">
-                                            <div align="center">
-                                                <table border="0" cellpadding="0" cellspacing="0"
-                                                       style="width:427.5pt;box-sizing:border-box;">
-                                                    <tbody>
-                                                    <tr></tr>
-                                                    <td style="padding:10pt;box-sizing:border-box;">
-                                                        <p align="center"
-                                                           style="text-align:center;margin-top:0;box-sizing:border-box;line-height:18.0pt;">
-                                                            <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">
-                                                            &copy;2025. All rights reserved.</span>
-                                                               <hr/>
-                                                             CONFIDENTIALITY NOTICE: This message (and any attachment) is confidential and intended for the sole use of the individual or entity to which it 
-                                                             is addressed. If you are not the intended recipient, you must not review, retransmit, convert to hard-copy, copy, use or disseminate this email or any of its attachments. If you received this email in error, please notify the sender immediately and delete it. This notice is automatically appended to all Internet email.
-                                                            
-                                                        </p></td>
-                                                    </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr height="32" style="height:32px">
-                        <td></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+            <tr>
+                <td style="padding:26.25pt;box-sizing:border-box; color: rgb(61, 72, 82); border-width:1px">
+                    <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
+                        <span>Hi%s,</span>
+                    </p>
+                    <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
+                        <span>%s</span>
+                    </p>
+                </td>
+            </tr>
             """;
 
     public static String PasswordResetEmailTemplate = """
-            <div style="display:grid; justify-content: center;">
-                <div></div>
-                <table style="width:100%%;border-radius: 25px;">
-                    <tbody>
-                    <tr height="32" style="height:32px">
-                        <td></td>
-                    </tr>
-                    <tr align='center'>
-                        <td style="width:100%%;padding:0;border-style:solid none;border-top-width:1pt;border-bottom-width:1pt;border-top-color:#EDEFF2;border-bottom-color:#EDEFF2;box-sizing:border-box;">
-                            <div align="center">
-                                <table cellpadding="0" cellspacing="0"
-                                       style="background-color:white;width:500.5pt;box-sizing:border-box; border-color:#A0A0A0 #A0A0A0 #ffffff #A0A0A0; border-width:1px">
-                                    <tbody>
-                                    <tr style="background-color:#7c74cc;">
-                                        <td style="padding:18.75pt 0;">
-                                            <p align="center" style="font-size:11pt; text-align:center;margin:0;">
-                                        <span>
-                                            <a style="text-decoration:none" data-auth="NotApplicable" data-linkindex="3"
-                                               href="https://asgard.slafrica.net:9810/"
-                                               rel="noopener noreferrer" target="_blank">
-                                                <b><span style="color:#000000;font-size:16.5pt;">Switch-Bridge</span></b>
-                                            </a>
-                                        </span>
-                                            </p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding:26.25pt;box-sizing:border-box; color: rgb(61, 72, 82); border-width:1px">
-                                            <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
-                                                <span>Hi%s,</span>
-                                            </p>
-                                            <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
-                                                <span>%s</span>
-                                            </p>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td align="center">
-                                            <a href="%s"  style=" color: #FFF;border-radius:3px; text-decoration:none;background-color:#22BC66;border-top:10px solid #22BC66;border-right: 18px solid #22BC66;border-bottom: 10px solid #22BC66;border-left: 18px solid #22BC66;" class="f-fallback button button--green" target="_blank">Reset your password</a>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td style="padding:26.25pt;box-sizing:border-box; color: rgb(61, 72, 82); border-width:1px">
-                                            <p style="margin-top:0; box-sizing:border-box; text-align: center;">
-                                                        <span style="color: rgb(174, 174, 174); font-size:9pt; text-align: center;">
-                                                           </span>
-                                            </p>
-                                        </td>
-                                    </tr>
-                                    <tr align='center'>
-                                        <td style="background-color:#cccccc; padding:0;box-sizing:border-box;">
-                                            <div align="center">
-                                                <table border="0" cellpadding="0" cellspacing="0"
-                                                       style="width:427.5pt;box-sizing:border-box;">
-                                                    <tbody>
-                                                    <tr></tr>
-                                                    <td style="padding:10pt;box-sizing:border-box;">
-                                                        <p align="center"
-                                                           style="text-align:center;margin-top:0;box-sizing:border-box;line-height:18.0pt;">
-                                                            <span style="font-family: &quot;Segoe UI&quot;, sans-serif, serif, EmojiFont;">
-                                                            &copy;2025. All rights reserved.</span>
-                                                               <hr/>
-                                                             CONFIDENTIALITY NOTICE: This message (and any attachment) is confidential and intended for the sole use of the individual or entity to which it 
-                                                             is addressed. If you are not the intended recipient, you must not review, retransmit, convert to hard-copy, copy, use or disseminate this email or any of its attachments. If you received this email in error, please notify the sender immediately and delete it. This notice is automatically appended to all Internet email.
-                                                            
-                                                        </p></td>
-                                                    </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr height="32" style="height:32px">
-                        <td></td>
-                    </tr>
-                    </tbody>
-                </table>
-            </div>
+            <tr>
+                <td style="padding:26.25pt;box-sizing:border-box; color: rgb(61, 72, 82); border-width:1px">
+                    <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
+                        <span>Hi%s,</span>
+                    </p>
+                    <p style="margin-top:0;box-sizing:border-box;line-height:18.0pt; font-size:11pt;">
+                        <span>%s</span>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td align="center">
+                    <a href="%s"  style=" color: #FFF;border-radius:3px; text-decoration:none;background-color:#22BC66;border-top:10px solid #22BC66;border-right: 18px solid #22BC66;border-bottom: 10px solid #22BC66;border-left: 18px solid #22BC66;" class="f-fallback button button--green" target="_blank">Reset your password</a>
+                </td>
+            </tr>
             """;
 }

@@ -90,9 +90,9 @@ public class PasswordResetService {
         String url = props.baseUrl() + "/auth/reset-password?reset_token=" + encryptedResetToken;
 
         if (isNewUser) {
-            pushNewAccountPasswordReset(oauthClientDetails.getApplicationName(), url, user.getEmail());
+            pushNewAccountPasswordReset(oauthClientDetails.getApplicationName(), url, user.getEmail(), user.getCompanyId());
         } else {
-            pushResetEmail(oauthClientDetails.getApplicationName(), url, user.getEmail());
+            pushResetEmail(oauthClientDetails.getApplicationName(), url, user.getEmail(),user.getCompanyId());
         }
 
         return CustomResponse.builder()
@@ -105,20 +105,20 @@ public class PasswordResetService {
         return RSAKeyGenerator.urlEncryptWithAES(props.cipher(), plainToken.getBytes(StandardCharsets.UTF_8));
     }
 
-    private void pushResetEmail(String product, String link, String email) {
+    private void pushResetEmail(String product, String link, String email, String companyId) {
 
         String msg = "<p>You recently requested to reset your password for your " + product + " account. Use the button below to reset it. <strong>This password reset is only valid for the next 2 hours.</strong></p";
         String body = String.format(PasswordResetEmailTemplate, "", msg, link);
         notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", body,
-                "PASSWORD RESET", List.of(email).toArray(new String[0]));
+                "PASSWORD RESET", List.of(email).toArray(new String[0]), companyId);
     }
 
-    private void pushNewAccountPasswordReset(String product, String link, String email) {
+    private void pushNewAccountPasswordReset(String product, String link, String email, String companyId) {
         String msg = "<p>An account has been created on the " + product + ". Use the button below to reset your password. <strong>This password reset is only valid for the next 2 hours.</strong></p";
         String body = String.format(PasswordResetEmailTemplate, "", msg, link);
         notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", body,
                 "PASSWORD RESET",
-                List.of(email).toArray(new String[0]));
+                List.of(email).toArray(new String[0]), companyId);
 
     }
 

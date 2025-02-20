@@ -171,7 +171,8 @@ public class JwtTokenUtil {
                 String body = String.format(EmailTemplate, "", msg);
                 notificationService.sendEmailNotification(Date.from(Instant.now()).getTime() + "", body,
                         "ONE TIME PASSWORD",
-                        List.of(userEmail).toArray(new String[0])
+                        List.of(userEmail).toArray(new String[0]),
+                        userCompId
                 );
 
                 LocalDateTime current = LocalDateTime.now(ZoneOffset.UTC);

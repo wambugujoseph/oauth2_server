@@ -9,8 +9,8 @@ package com.sds.authorization.server.service;
 public interface NotificationService {
 
 
-    void sendSmsNotification(String id, String body, String subject, String[] recipient);
+    void sendSmsNotification(String id, String body, String subject, String[] recipient, String clientId);
 
-    void sendEmailNotification(String id, String body, String subject, String[] recipient);
+    void sendEmailNotification(String id, String body, String subject, String[] recipient, String clientId);
 
 }

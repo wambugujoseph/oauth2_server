@@ -3,6 +3,7 @@ package com.sds.authorization.server.security;
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
@@ -17,6 +18,7 @@ import java.net.HttpRetryException;
  * Time 12:35 PM
  */
 
+@Slf4j
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CustomGenericFilter extends GenericFilter {
@@ -37,7 +39,7 @@ public class CustomGenericFilter extends GenericFilter {
             try {
                 filterChain.doFilter(servletRequest, servletResponse);
             } catch (Exception e) {
-                System.out.println("---------e"+e.getMessage());
+                log.error(e.getMessage(), e);
             }
         }
     }
